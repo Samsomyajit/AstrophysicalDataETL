@@ -1,70 +1,122 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Astrophysics ETL and Visualization Web Application
 
-## Available Scripts
+This project is a web application for extracting, transforming, and visualizing astrophysical data, specifically focusing on near-Earth objects (NEOs) recorded by NASA. The application uses React for the frontend and includes interactive visualizations powered by Plotly.js.
 
-In the project directory, you can run:
+## Project Structure
 
-### `npm start`
+```
+/astrophysics-app
+  /public
+    /data
+      astrophysical_data_cleaned.json
+  /src
+    /components
+      Navbar.js
+    /pages
+      Home.js
+      Research.js
+    App.js
+    index.js
+/scripts
+  extract.py
+  transform.py
+/data
+  astrophysical_data.csv
+  astrophysical_data_cleaned.csv
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Features
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- **Data Extraction, Transformation, and Loading (ETL):** Python scripts are used to fetch data from the NASA API, transform it, and save it as JSON and CSV files.
+- **Interactive Visualizations:** The web application uses Plotly.js to create interactive scatter plots, histograms, box plots, and scatter plot matrices.
+- **Navigation Bar:** Includes a navigation bar with links to the Home and Research Findings pages.
+- **Responsive Design:** The application is responsive and adapts to different screen sizes.
 
-### `npm test`
+## Getting Started
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Prerequisites
 
-### `npm run build`
+- Node.js and npm
+- Python 3.x
+- A NASA API key (you can get one from the [NASA API website](https://api.nasa.gov/))
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Installation
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/your-username/astrophysics-app.git
+   cd astrophysics-app
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+2. **Run the ETL Scripts:**
 
-### `npm run eject`
+   Replace `your_nasa_api_key` with your actual NASA API key in `extract.py`.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+   ```bash
+   cd scripts
+   python extract.py
+   python transform.py
+   ```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+   Move the generated JSON file to the `public/data` directory:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+   ```bash
+   mv data/astrophysical_data_cleaned.json ../public/data/astrophysical_data_cleaned.json
+   ```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+3. **Install Node.js Dependencies:**
+   ```bash
+   cd ../astrophysics-app
+   npm install
+   ```
 
-## Learn More
+4. **Start the React Application:**
+   ```bash
+   npm start
+   ```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+   The application should now be running on `http://localhost:3000`.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Project Structure
 
-### Code Splitting
+- **public/data:** Contains the cleaned astrophysical data in JSON format.
+- **src/components/Navbar.js:** The navigation bar component.
+- **src/pages/Home.js:** The home page containing data visualizations.
+- **src/pages/Research.js:** The research findings page with explanations of the data and findings.
+- **src/App.js:** The main application file that sets up routing.
+- **scripts/extract.py:** Python script for extracting data from the NASA API.
+- **scripts/transform.py:** Python script for transforming the extracted data.
+- **data/astrophysical_data.csv:** Raw data extracted from the NASA API.
+- **data/astrophysical_data_cleaned.csv:** Transformed and cleaned data.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Usage
 
-### Analyzing the Bundle Size
+### Home Page
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+The home page features interactive visualizations, including:
 
-### Making a Progressive Web App
+- Scatter plot of diameter vs. distance
+- Histograms of diameter and distance
+- Box plots of diameter and distance
+- Scatter plot matrix for multivariate analysis
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+You can apply filters to the data using the input fields provided and see the updated visualizations.
 
-### Advanced Configuration
+### Research Findings Page
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+The research findings page provides a detailed explanation of the data and key findings from the analysis, including insights into the distribution and characteristics of near-Earth objects.
 
-### Deployment
+## Author
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Sam Chakraborty
 
-### `npm run build` fails to minify
+## License
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- NASA for providing the API to access near-Earth object data.
+- Plotly.js for interactive visualizations.
+- React for the frontend framework.
