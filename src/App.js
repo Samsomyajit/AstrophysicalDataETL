@@ -5,6 +5,7 @@ import Research from './Pages/Research';
 import OrbitalSimulation from './Pages/OrbitalSimulation';
 import SpaceMap from './Pages/SpaceMap';
 import OrbitalTracking from './Pages/OrbitalTracking';
+import LiveTracking from './Pages/LiveTracking';
 import Navbar from './components/Navbar';
 import styled from 'styled-components';
 
@@ -24,6 +25,7 @@ const App = () => {
           <Route path="/orbital-simulation" element={<OrbitalSimulation />} />
           <Route path="/space-map" element={<SpaceMap />} />
           <Route path="/orbital-tracking" element={<OrbitalTracking />} />
+          <Route path="/live-tracking" element={<LiveTracking />} />
         </Routes>
       </AppContainer>
     </Router>
