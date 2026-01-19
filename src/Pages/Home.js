@@ -57,7 +57,7 @@ const Home = () => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('/data/astrophysical_data_cleaned.json');
+      const response = await fetch(`${process.env.PUBLIC_URL}/data/astrophysical_data_cleaned.json`);
       const data = await response.json();
       setData(data);
     } catch (error) {
