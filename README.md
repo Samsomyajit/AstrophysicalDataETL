@@ -3,35 +3,46 @@
 
 This project is a web application for extracting, transforming, and visualizing astrophysical data, specifically focusing on near-Earth objects (NEOs) recorded by NASA. The application uses React for the frontend and includes interactive visualizations powered by Plotly.js.
 
-## Project Structure
+## ✨ Features
 
-```
-/astrophysics-app
-  /public
-    /data
-      astrophysical_data_cleaned.json
-  /src
-    /components
-      Navbar.js
-    /pages
-      Home.js
-      Research.js
-    App.js
-    index.js
-/scripts
-  extract.py
-  transform.py
-/data
-  astrophysical_data.csv
-  astrophysical_data_cleaned.csv
-```
+### 🔭 Home - Data Analysis Dashboard
+- **Interactive Scatter Plot**: Diameter vs Distance analysis with color-coded velocity
+- **Distribution Histograms**: Visualize diameter and distance distributions
+- **Violin Plot**: Statistical distribution analysis
+- **3D Multivariate Analysis**: Explore relationships between diameter, distance, and velocity
+- **Parallel Coordinates Plot**: Multivariate analysis across 5 dimensions
 
-## Features
+### 🪐 Orbital Simulation
+- **3D Orbital Visualization**: Interactive 3D view of NEO orbits around the Sun
+- **Reference Orbits**: Earth and Mars orbits for comparison
+- **Animation Controls**: Play/pause orbital motion simulation
+- **Orbital Parameters Display**: Semi-major axis, eccentricity, inclination, period
 
-- **Data Extraction, Transformation, and Loading (ETL):** Python scripts are used to fetch data from the NASA API, transform it, and save it as JSON and CSV files.
-- **Interactive Visualizations:** The web application uses Plotly.js to create interactive scatter plots, histograms, box plots, and scatter plot matrices.
-- **Navigation Bar:** Includes a navigation bar with links to the Home and Research Findings pages.
-- **Responsive Design:** The application is responsive and adapts to different screen sizes.
+### 🗺️ Space Map
+- **2D Polar View**: Radial distribution of NEOs relative to Earth
+- **3D Space View**: Spatial distribution in 3D coordinates
+- **Analysis View**: Additional statistical charts
+- **Interactive Filters**: Distance range and size filters
+
+### 🛰️ Orbital Tracking Dashboard
+- **Closest Approaches Table**: Track NEOs with nearest approach distances
+- **Approach Timeline**: Visual timeline of upcoming approaches
+- **Velocity Distribution**: Histogram of relative velocities
+- **Kepler's Third Law Visualization**: Orbital period vs semi-major axis
+- **Filter & Sort Options**: Filter by hazard status, proximity, or size
+
+### 📚 Research Findings
+- **Statistical Analysis**: Mean, median, standard deviation calculations
+- **Cumulative Size Distribution**: Power-law distribution visualization
+- **Hazard Assessment**: Classification of potentially hazardous objects
+- **Correlation Analysis**: Diameter-distance correlation coefficients
+- **Key Insights**: Automated insights from the data
+
+## 🎨 Design Features
+- **Dark Theme**: Space-inspired dark theme throughout
+- **Responsive Design**: Adapts to different screen sizes
+- **Interactive Visualizations**: Zoom, pan, hover tooltips on all charts
+- **Modern UI**: Gradient backgrounds, glowing effects, smooth animations
 
 ## Getting Started
 
@@ -80,32 +91,61 @@ This project is a web application for extracting, transforming, and visualizing 
 
 ## Project Structure
 
-- **public/data:** Contains the cleaned astrophysical data in JSON format.
-- **src/components/Navbar.js:** The navigation bar component.
-- **src/pages/Home.js:** The home page containing data visualizations.
-- **src/pages/Research.js:** The research findings page with explanations of the data and findings.
-- **src/App.js:** The main application file that sets up routing.
-- **scripts/extract.py:** Python script for extracting data from the NASA API.
-- **scripts/transform.py:** Python script for transforming the extracted data.
-- **data/astrophysical_data.csv:** Raw data extracted from the NASA API.
-- **data/astrophysical_data_cleaned.csv:** Transformed and cleaned data.
+```
+/astrophysics-app
+  /public
+    /data
+      astrophysical_data_cleaned.json
+      astrophysical_data_enhanced.json  (with orbital parameters)
+  /src
+    /components
+      Navbar.js
+    /Pages
+      Home.js              - Main analysis dashboard
+      Research.js          - Statistical research findings
+      OrbitalSimulation.js - 3D orbital visualization
+      SpaceMap.js          - 2D/3D space map
+      OrbitalTracking.js   - Tracking dashboard
+    App.js
+    index.js
+/scripts
+  extract.py
+  transform.py
+```
 
 ## Usage
 
-### Home Page
+### 🔭 Home Page
+The home page features interactive visualizations including:
+- Scatter plot of diameter vs. distance with velocity encoding
+- Distribution histograms for diameter and distance
+- Violin plot for statistical analysis
+- 3D scatter plot for multivariate analysis
+- Parallel coordinates plot
 
-The home page features interactive visualizations, including:
+### 🪐 Orbital Simulation
+- Select any NEO to visualize its orbit in 3D
+- Compare with Earth and Mars orbits
+- Animate orbital motion with play/pause controls
+- View orbital parameters (semi-major axis, eccentricity, inclination)
 
-- Scatter plot of diameter vs. distance
-- Histograms of diameter and distance
-- Box plots of diameter and distance
-- Scatter plot matrix for multivariate analysis
+### 🗺️ Space Map
+- View NEO distribution in 2D polar or 3D views
+- Filter by distance and size
+- Analyze spatial patterns
 
-You can apply filters to the data using the input fields provided and see the updated visualizations.
+### 🛰️ Orbital Tracking
+- Monitor closest approach distances
+- View approach timeline
+- Analyze velocity distributions
+- Visualize Kepler's Third Law
 
-### Research Findings Page
-
-The research findings page provides a detailed explanation of the data and key findings from the analysis, including insights into the distribution and characteristics of near-Earth objects.
+### 📚 Research Findings
+Detailed statistical analysis with:
+- Size distribution analysis
+- Hazard assessment
+- Correlation analysis
+- Key research conclusions
 
 ## Author
 
