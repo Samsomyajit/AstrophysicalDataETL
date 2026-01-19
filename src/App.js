@@ -2,24 +2,28 @@ import React from 'react';
 import { HashRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './Pages/Home';
 import Research from './Pages/Research';
+import OrbitalSimulation from './Pages/OrbitalSimulation';
+import SpaceMap from './Pages/SpaceMap';
+import OrbitalTracking from './Pages/OrbitalTracking';
 import Navbar from './components/Navbar';
 import styled from 'styled-components';
 
 const AppContainer = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  font-family: Arial, sans-serif;
+  min-height: 100vh;
+  background: #0a0a1a;
 `;
 
 const App = () => {
   return (
     <Router>
-      <Navbar />
       <AppContainer>
+        <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/research" element={<Research />} />
+          <Route path="/orbital-simulation" element={<OrbitalSimulation />} />
+          <Route path="/space-map" element={<SpaceMap />} />
+          <Route path="/orbital-tracking" element={<OrbitalTracking />} />
         </Routes>
       </AppContainer>
     </Router>
