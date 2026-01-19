@@ -39,6 +39,8 @@ This project is a web application for extracting, transforming, and visualizing 
 - **Detailed Information**: Origin, destination, orbital parameters
 - **Filter by Body**: Filter satellites by celestial body (Earth, Moon, Mars)
 - **Research Integration**: Connect tracking data with astrophysical research
+- **N2YO API Integration**: Real-time satellite tracking with TLE data, visual passes, and radio passes
+- **OpenSky Network API**: Live aircraft tracking with real-time position data
 
 ### 📚 Research Findings
 - **Statistical Analysis**: Mean, median, standard deviation calculations
@@ -60,6 +62,8 @@ This project is a web application for extracting, transforming, and visualizing 
 - Node.js and npm
 - Python 3.x
 - A NASA API key (you can get one from the [NASA API website](https://api.nasa.gov/))
+- (Optional) N2YO API key for live satellite tracking (register at [n2yo.com](https://www.n2yo.com/))
+- (Optional) OpenSky Network account for higher rate limits on aircraft tracking (register at [opensky-network.org](https://opensky-network.org/))
 
 ### Installation
 
@@ -97,6 +101,38 @@ This project is a web application for extracting, transforming, and visualizing 
    ```
 
    The application should now be running on `http://localhost:3000`.
+
+### API Configuration (Optional)
+
+To enable real-time satellite and aircraft tracking, configure the following API keys:
+
+1. **Create a `.env` file** in the root directory based on `.env.example`:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Configure N2YO API** (for satellite tracking):
+   - Register at [n2yo.com](https://www.n2yo.com/)
+   - Go to your profile page and generate an API key
+   - Add to `.env`: `REACT_APP_N2YO_API_KEY=your_api_key_here`
+
+3. **Configure OpenSky Network** (optional, for aircraft tracking):
+   - Register at [opensky-network.org](https://opensky-network.org/)
+   - Add to `.env`:
+     ```
+     REACT_APP_OPENSKY_USERNAME=your_username
+     REACT_APP_OPENSKY_PASSWORD=your_password
+     ```
+   - Note: Anonymous access is available but with lower rate limits
+
+4. **Configure Observer Location** (optional):
+   ```
+   REACT_APP_OBSERVER_LAT=40.7128
+   REACT_APP_OBSERVER_LNG=-74.0060
+   REACT_APP_OBSERVER_ALT=0
+   ```
+
+When API keys are not configured, the application will use simulated data for demonstration purposes.
 
 ## Project Structure
 

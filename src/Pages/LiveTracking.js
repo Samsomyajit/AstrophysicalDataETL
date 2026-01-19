@@ -10,35 +10,96 @@ import styled from 'styled-components';
 // N2YO API (Satellite Tracking):
 //   - Register at https://www.n2yo.com/ and get your API key from profile page
 //   - Base URL: https://api.n2yo.com/rest/v1/satellite/
-//   - Endpoints: /tle/{id}, /positions/{id}/{lat}/{lng}/{alt}/{seconds}, /above/{lat}/{lng}/{alt}/{radius}/{category}
+//   - Endpoints: 
+//     - /tle/{id} - Get Two Line Elements
+//     - /positions/{id}/{lat}/{lng}/{alt}/{seconds} - Get satellite positions
+//     - /visualpasses/{id}/{lat}/{lng}/{alt}/{days}/{min_visibility} - Get visual passes
+//     - /radiopasses/{id}/{lat}/{lng}/{alt}/{days}/{min_elevation} - Get radio passes
+//     - /above/{lat}/{lng}/{alt}/{radius}/{category} - Get satellites above location
 //
 // OpenSky Network API (Aircraft Tracking):
 //   - Register at https://opensky-network.org/ for higher rate limits
 //   - Base URL: https://opensky-network.org/api
 //   - Endpoint: /states/all (anonymous access available with limits)
 //
-// Set these environment variables or replace with your keys:
+// Create a .env file based on .env.example and set your API keys
 const API_CONFIG = {
-  N2YO_API_KEY: process.env.REACT_APP_N2YO_API_KEY || '', // Get from n2yo.com profile
+  N2YO_API_KEY: process.env.REACT_APP_N2YO_API_KEY || '',
   N2YO_BASE_URL: 'https://api.n2yo.com/rest/v1/satellite',
   OPENSKY_BASE_URL: 'https://opensky-network.org/api',
-  // Observer location for satellite passes (default: New York)
-  OBSERVER_LAT: 40.7128,
-  OBSERVER_LNG: -74.0060,
-  OBSERVER_ALT: 0,
-  // Use simulated data when API keys are not configured
-  USE_SIMULATED_DATA: true // Set to false when API keys are configured
+  OPENSKY_USERNAME: process.env.REACT_APP_OPENSKY_USERNAME || '',
+  OPENSKY_PASSWORD: process.env.REACT_APP_OPENSKY_PASSWORD || '',
+  // Observer location for satellite passes (configurable via environment variables)
+  OBSERVER_LAT: parseFloat(process.env.REACT_APP_OBSERVER_LAT) || 40.7128,
+  OBSERVER_LNG: parseFloat(process.env.REACT_APP_OBSERVER_LNG) || -74.0060,
+  OBSERVER_ALT: parseFloat(process.env.REACT_APP_OBSERVER_ALT) || 0,
+  // Automatically use simulated data when N2YO API key is not configured
+  get USE_SIMULATED_DATA() {
+    return !this.N2YO_API_KEY;
+  }
 };
 
 // N2YO Satellite Categories for the "above" endpoint
+// Full list available at https://www.n2yo.com/api/
 const N2YO_CATEGORIES = {
   ALL: 0,
+  BRIGHTEST: 1,
   ISS: 2,
   WEATHER: 3,
-  STARLINK: 52,
-  GPS: 50,
+  NOAA: 4,
+  GOES: 5,
+  EARTH_RESOURCES: 6,
+  SEARCH_RESCUE: 7,
+  DISASTER_MONITORING: 8,
+  TRACKING_DATA_RELAY: 9,
+  GEOSTATIONARY: 10,
+  INTELSAT: 11,
+  GORIZONT: 12,
+  RADUGA: 13,
+  MOLNIYA: 14,
+  IRIDIUM: 15,
+  ORBCOMM: 16,
+  GLOBALSTAR: 17,
   AMATEUR_RADIO: 18,
-  COMMUNICATION: 10 // Geostationary
+  EXPERIMENTAL: 19,
+  GPS_OPERATIONAL: 20,
+  GLONASS_OPERATIONAL: 21,
+  GALILEO: 22,
+  SATELLITE_AUGMENTATION: 23,
+  NAVY_NAVIGATION: 24,
+  RUSSIAN_LEO_NAVIGATION: 25,
+  SPACE_EARTH_SCIENCE: 26,
+  GEODETIC: 27,
+  ENGINEERING: 28,
+  EDUCATION: 29,
+  MILITARY: 30,
+  RADAR_CALIBRATION: 31,
+  CUBESATS: 32,
+  XM_SIRIUS: 33,
+  TV: 34,
+  BEIDOU: 35,
+  YAOGAN: 36,
+  WESTFORD_NEEDLES: 37,
+  PARUS: 38,
+  STRELA: 39,
+  GONETS: 40,
+  TSIKLON: 41,
+  TSIKADA: 42,
+  O3B_NETWORKS: 43,
+  TSELINA: 44,
+  CELESTIS: 45,
+  IRNSS: 46,
+  QZSS: 47,
+  FLOCK: 48,
+  LEMUR: 49,
+  GPS_CONSTELLATION: 50,
+  GLONASS_CONSTELLATION: 51,
+  STARLINK: 52,
+  ONEWEB: 53,
+  CHINESE_SPACE_STATION: 54,
+  QIANFAN: 55,
+  KUIPER: 56,
+  GEESAT: 57
 };
 
 // ============================================================================
@@ -63,7 +124,8 @@ const fetchSatellitesAbove = async (categoryId = 0, searchRadius = 70) => {
   }
 };
 
-// Fetch satellite TLE data using N2YO API (available for extended functionality)
+// Fetch satellite TLE data using N2YO API
+// Available for extended functionality (e.g., orbit calculations)
 // eslint-disable-next-line no-unused-vars
 const fetchSatelliteTLE = async (noradId) => {
   if (!API_CONFIG.N2YO_API_KEY) return null;
@@ -79,8 +141,7 @@ const fetchSatelliteTLE = async (noradId) => {
   }
 };
 
-// Fetch satellite positions using N2YO API (available for extended functionality)
-// eslint-disable-next-line no-unused-vars
+// Fetch satellite positions using N2YO API
 const fetchSatellitePositions = async (noradId, seconds = 10) => {
   if (!API_CONFIG.N2YO_API_KEY) return null;
   
@@ -95,7 +156,42 @@ const fetchSatellitePositions = async (noradId, seconds = 10) => {
   }
 };
 
+// Fetch visual passes using N2YO API
+// Returns predicted visual passes for a satellite relative to observer location
+const fetchVisualPasses = async (noradId, days = 10, minVisibility = 300) => {
+  if (!API_CONFIG.N2YO_API_KEY) return null;
+  
+  try {
+    const url = `${API_CONFIG.N2YO_BASE_URL}/visualpasses/${noradId}/${API_CONFIG.OBSERVER_LAT}/${API_CONFIG.OBSERVER_LNG}/${API_CONFIG.OBSERVER_ALT}/${days}/${minVisibility}?apiKey=${API_CONFIG.N2YO_API_KEY}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`N2YO API error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching visual passes from N2YO:', error);
+    return null;
+  }
+};
+
+// Fetch radio passes using N2YO API
+// Returns predicted radio passes for a satellite relative to observer location
+// Available for extended functionality (e.g., ham radio operations)
+// eslint-disable-next-line no-unused-vars
+const fetchRadioPasses = async (noradId, days = 10, minElevation = 40) => {
+  if (!API_CONFIG.N2YO_API_KEY) return null;
+  
+  try {
+    const url = `${API_CONFIG.N2YO_BASE_URL}/radiopasses/${noradId}/${API_CONFIG.OBSERVER_LAT}/${API_CONFIG.OBSERVER_LNG}/${API_CONFIG.OBSERVER_ALT}/${days}/${minElevation}?apiKey=${API_CONFIG.N2YO_API_KEY}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`N2YO API error: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching radio passes from N2YO:', error);
+    return null;
+  }
+};
+
 // Fetch aircraft states from OpenSky Network API
+// Supports optional authentication for higher rate limits
 const fetchAircraftStates = async (boundingBox = null) => {
   try {
     let url = `${API_CONFIG.OPENSKY_BASE_URL}/states/all`;
@@ -106,7 +202,16 @@ const fetchAircraftStates = async (boundingBox = null) => {
       url += `?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`;
     }
     
-    const response = await fetch(url);
+    // Build fetch options with optional authentication
+    const options = {};
+    if (API_CONFIG.OPENSKY_USERNAME && API_CONFIG.OPENSKY_PASSWORD) {
+      const credentials = btoa(`${API_CONFIG.OPENSKY_USERNAME}:${API_CONFIG.OPENSKY_PASSWORD}`);
+      options.headers = {
+        'Authorization': `Basic ${credentials}`
+      };
+    }
+    
+    const response = await fetch(url, options);
     if (!response.ok) throw new Error(`OpenSky API error: ${response.status}`);
     return await response.json();
   } catch (error) {
@@ -650,6 +755,8 @@ const LiveTracking = () => {
   const [satellites, setSatellites] = useState([]);
   const [airplanes, setAirplanes] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItemPasses, setSelectedItemPasses] = useState(null); // For visual/radio passes
+  const [selectedItemPositions, setSelectedItemPositions] = useState(null); // For satellite positions
   const [bodyFilter, setBodyFilter] = useState('all');
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
@@ -765,9 +872,30 @@ const LiveTracking = () => {
     };
   }, [satellites, airplanes]);
 
-  // Handle item selection
-  const handleSelectItem = useCallback((item, type) => {
+  // Handle item selection - fetch additional data when satellite is selected
+  const handleSelectItem = useCallback(async (item, type) => {
     setSelectedItem({ ...item, itemType: type });
+    setSelectedItemPasses(null);
+    setSelectedItemPositions(null);
+    
+    // If a satellite is selected and we have API access, fetch additional data
+    if (type === 'satellite' && item.noradId && !API_CONFIG.USE_SIMULATED_DATA) {
+      try {
+        // Fetch real-time positions (next 60 seconds)
+        const positions = await fetchSatellitePositions(item.noradId, 60);
+        if (positions && positions.positions) {
+          setSelectedItemPositions(positions.positions);
+        }
+        
+        // Fetch visual passes for the next 7 days
+        const passes = await fetchVisualPasses(item.noradId, 7, 300);
+        if (passes && passes.passes) {
+          setSelectedItemPasses(passes.passes);
+        }
+      } catch (error) {
+        console.error('Error fetching satellite details:', error);
+      }
+    }
   }, []);
 
   // Airplane 2D map visualization using Plotly scatter with airplane-like markers
@@ -1149,6 +1277,7 @@ const LiveTracking = () => {
             </DetailHeader>
 
             {selectedItem.itemType === 'satellite' ? (
+              <>
               <DetailGrid>
                 <DetailItem color="#00d4ff">
                   <div className="label">NORAD ID</div>
@@ -1199,6 +1328,69 @@ const LiveTracking = () => {
                   <div className="value">Lat: {selectedItem.lat}° Lng: {selectedItem.lng}°</div>
                 </DetailItem>
               </DetailGrid>
+              
+              {/* Visual Passes Section - Only shown when live data is available */}
+              {selectedItemPasses && selectedItemPasses.length > 0 && (
+                <div style={{ marginTop: '20px' }}>
+                  <CardTitle color="#FFD700">🔭 Upcoming Visual Passes</CardTitle>
+                  <Table>
+                    <thead>
+                      <tr>
+                        <th>Start Time (UTC)</th>
+                        <th>Direction</th>
+                        <th>Max Elevation</th>
+                        <th>Duration</th>
+                        <th>Magnitude</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedItemPasses.slice(0, 5).map((pass, idx) => (
+                        <tr key={idx}>
+                          <td>{new Date(pass.startUTC * 1000).toLocaleString()}</td>
+                          <td>{pass.startAzCompass} → {pass.endAzCompass}</td>
+                          <td>{pass.maxEl}°</td>
+                          <td>{pass.duration}s</td>
+                          <td>{pass.mag < 100000 ? pass.mag.toFixed(1) : 'N/A'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
+              )}
+              
+              {/* Real-time Positions Section - Only shown when live data is available */}
+              {selectedItemPositions && selectedItemPositions.length > 0 && (
+                <div style={{ marginTop: '20px' }}>
+                  <CardTitle color="#4ECDC4">📍 Position Prediction (Next 60 seconds)</CardTitle>
+                  <DetailGrid>
+                    <DetailItem color="#00d4ff">
+                      <div className="label">Current Latitude</div>
+                      <div className="value">{selectedItemPositions[0].satlatitude?.toFixed(4)}°</div>
+                    </DetailItem>
+                    <DetailItem color="#4ECDC4">
+                      <div className="label">Current Longitude</div>
+                      <div className="value">{selectedItemPositions[0].satlongitude?.toFixed(4)}°</div>
+                    </DetailItem>
+                    <DetailItem color="#9370DB">
+                      <div className="label">Current Altitude</div>
+                      <div className="value">{selectedItemPositions[0].sataltitude?.toFixed(2)} km</div>
+                    </DetailItem>
+                    <DetailItem color="#FFD700">
+                      <div className="label">Azimuth (from observer)</div>
+                      <div className="value">{selectedItemPositions[0].azimuth?.toFixed(2)}°</div>
+                    </DetailItem>
+                    <DetailItem color="#00d4ff">
+                      <div className="label">Elevation (from observer)</div>
+                      <div className="value">{selectedItemPositions[0].elevation?.toFixed(2)}°</div>
+                    </DetailItem>
+                    <DetailItem color="#4ECDC4">
+                      <div className="label">Right Ascension</div>
+                      <div className="value">{selectedItemPositions[0].ra?.toFixed(4)}°</div>
+                    </DetailItem>
+                  </DetailGrid>
+                </div>
+              )}
+              </>
             ) : (
               <DetailGrid>
                 <DetailItem color="#FFD700">
