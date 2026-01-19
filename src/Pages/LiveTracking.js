@@ -53,7 +53,7 @@ const fetchSatellitesAbove = async (categoryId = 0, searchRadius = 70) => {
   }
   
   try {
-    const url = `${API_CONFIG.N2YO_BASE_URL}/above/${API_CONFIG.OBSERVER_LAT}/${API_CONFIG.OBSERVER_LNG}/${API_CONFIG.OBSERVER_ALT}/${searchRadius}/${categoryId}&apiKey=${API_CONFIG.N2YO_API_KEY}`;
+    const url = `${API_CONFIG.N2YO_BASE_URL}/above/${API_CONFIG.OBSERVER_LAT}/${API_CONFIG.OBSERVER_LNG}/${API_CONFIG.OBSERVER_ALT}/${searchRadius}/${categoryId}?apiKey=${API_CONFIG.N2YO_API_KEY}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error(`N2YO API error: ${response.status}`);
     return await response.json();
@@ -63,13 +63,13 @@ const fetchSatellitesAbove = async (categoryId = 0, searchRadius = 70) => {
   }
 };
 
-// Fetch satellite TLE data using N2YO API
+// Fetch satellite TLE data using N2YO API (available for extended functionality)
 // eslint-disable-next-line no-unused-vars
 const fetchSatelliteTLE = async (noradId) => {
   if (!API_CONFIG.N2YO_API_KEY) return null;
   
   try {
-    const url = `${API_CONFIG.N2YO_BASE_URL}/tle/${noradId}&apiKey=${API_CONFIG.N2YO_API_KEY}`;
+    const url = `${API_CONFIG.N2YO_BASE_URL}/tle/${noradId}?apiKey=${API_CONFIG.N2YO_API_KEY}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error(`N2YO API error: ${response.status}`);
     return await response.json();
@@ -79,13 +79,13 @@ const fetchSatelliteTLE = async (noradId) => {
   }
 };
 
-// Fetch satellite positions using N2YO API
+// Fetch satellite positions using N2YO API (available for extended functionality)
 // eslint-disable-next-line no-unused-vars
 const fetchSatellitePositions = async (noradId, seconds = 10) => {
   if (!API_CONFIG.N2YO_API_KEY) return null;
   
   try {
-    const url = `${API_CONFIG.N2YO_BASE_URL}/positions/${noradId}/${API_CONFIG.OBSERVER_LAT}/${API_CONFIG.OBSERVER_LNG}/${API_CONFIG.OBSERVER_ALT}/${seconds}&apiKey=${API_CONFIG.N2YO_API_KEY}`;
+    const url = `${API_CONFIG.N2YO_BASE_URL}/positions/${noradId}/${API_CONFIG.OBSERVER_LAT}/${API_CONFIG.OBSERVER_LNG}/${API_CONFIG.OBSERVER_ALT}/${seconds}?apiKey=${API_CONFIG.N2YO_API_KEY}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error(`N2YO API error: ${response.status}`);
     return await response.json();
@@ -115,6 +115,10 @@ const fetchAircraftStates = async (boundingBox = null) => {
   }
 };
 
+// Unit conversion constants
+const METERS_TO_FEET = 3.28084;
+const MS_TO_KMH = 3.6;
+
 // Transform OpenSky response to our airplane format
 const transformOpenSkyData = (data) => {
   if (!data || !data.states) return [];
@@ -129,8 +133,8 @@ const transformOpenSkyData = (data) => {
       aircraft: 'Unknown', // OpenSky doesn't provide aircraft type
       origin: { code: 'N/A', city: state[2], lat: 0, lng: 0 },
       destination: { code: 'N/A', city: 'In Flight', lat: 0, lng: 0 },
-      altitude: Math.round((state[7] || state[13] || 0) * 3.28084), // Convert meters to feet
-      speed: Math.round((state[9] || 0) * 3.6), // Convert m/s to km/h
+      altitude: Math.round((state[7] || state[13] || 0) * METERS_TO_FEET), // Convert meters to feet
+      speed: Math.round((state[9] || 0) * MS_TO_KMH), // Convert m/s to km/h
       heading: Math.round(state[10] || 0),
       lat: (state[6] || 0).toFixed(2),
       lng: (state[5] || 0).toFixed(2),
@@ -766,6 +770,134 @@ const LiveTracking = () => {
     setSelectedItem({ ...item, itemType: type });
   }, []);
 
+  // Airplane 2D map visualization using Plotly scatter with airplane-like markers
+  const airplaneMapData = useMemo(() => {
+    const traces = [];
+    
+    // Add airplane markers
+    traces.push({
+      type: 'scatter',
+      mode: 'markers+text',
+      x: airplanes.map(a => parseFloat(a.lng)),
+      y: airplanes.map(a => parseFloat(a.lat)),
+      text: airplanes.map(a => a.callsign),
+      textposition: 'top center',
+      textfont: { size: 9, color: '#fff' },
+      marker: {
+        size: 14,
+        color: airplanes.map(a => a.speed),
+        colorscale: [[0, '#00d4ff'], [0.5, '#FFD700'], [1, '#FF6B6B']],
+        showscale: true,
+        colorbar: {
+          title: { text: 'Speed (km/h)', font: { color: '#ccc', size: 11 } },
+          tickfont: { color: '#ccc', size: 10 },
+          len: 0.5,
+          y: 0.75
+        },
+        symbol: 'triangle-up',
+        line: { width: 1, color: '#fff' }
+      },
+      customdata: airplanes.map(a => [a.altitude, a.speed, a.origin?.code, a.destination?.code]),
+      hovertemplate: '<b>%{text}</b><br>Route: %{customdata[2]} → %{customdata[3]}<br>Altitude: %{customdata[0]:,} ft<br>Speed: %{customdata[1]} km/h<br>Lat: %{y}° Lng: %{x}°<extra></extra>',
+      name: 'Aircraft'
+    });
+
+    // Add flight path for selected airplane
+    if (selectedItem?.itemType === 'airplane' && selectedItem.trajectory && selectedItem.trajectory.length >= 3) {
+      // Origin to current
+      traces.push({
+        type: 'scatter',
+        mode: 'lines',
+        x: [selectedItem.trajectory[0].lng, selectedItem.trajectory[1].lng],
+        y: [selectedItem.trajectory[0].lat, selectedItem.trajectory[1].lat],
+        line: { color: '#00FF00', width: 3 },
+        name: 'Completed',
+        showlegend: false
+      });
+      // Current to destination
+      traces.push({
+        type: 'scatter',
+        mode: 'lines',
+        x: [selectedItem.trajectory[1].lng, selectedItem.trajectory[2].lng],
+        y: [selectedItem.trajectory[1].lat, selectedItem.trajectory[2].lat],
+        line: { color: '#FFD700', width: 2, dash: 'dash' },
+        name: 'Remaining',
+        showlegend: false
+      });
+      // Origin marker
+      traces.push({
+        type: 'scatter',
+        mode: 'markers',
+        x: [selectedItem.trajectory[0].lng],
+        y: [selectedItem.trajectory[0].lat],
+        marker: { size: 12, color: '#00FF00', symbol: 'circle' },
+        name: `Origin: ${selectedItem.origin?.code}`,
+        showlegend: true
+      });
+      // Destination marker
+      traces.push({
+        type: 'scatter',
+        mode: 'markers',
+        x: [selectedItem.trajectory[2].lng],
+        y: [selectedItem.trajectory[2].lat],
+        marker: { size: 12, color: '#FF4444', symbol: 'square' },
+        name: `Dest: ${selectedItem.destination?.code}`,
+        showlegend: true
+      });
+    }
+
+    return traces;
+  }, [airplanes, selectedItem]);
+
+  const airplaneMapLayout = useMemo(() => ({
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(10, 20, 40, 0.9)',
+    title: { text: '✈️ Global Flight Tracker', font: { color: '#FFD700', size: 16 } },
+    xaxis: {
+      title: { text: 'Longitude', font: { color: '#888' } },
+      range: [-180, 180],
+      gridcolor: 'rgba(100,100,150,0.2)',
+      zerolinecolor: 'rgba(100,100,150,0.3)',
+      tickfont: { color: '#888' }
+    },
+    yaxis: {
+      title: { text: 'Latitude', font: { color: '#888' } },
+      range: [-90, 90],
+      gridcolor: 'rgba(100,100,150,0.2)',
+      zerolinecolor: 'rgba(100,100,150,0.3)',
+      tickfont: { color: '#888' },
+      scaleanchor: 'x'
+    },
+    legend: {
+      font: { color: '#ccc' },
+      bgcolor: 'rgba(0,0,0,0.5)',
+      x: 0.01,
+      y: 0.99
+    },
+    font: { color: '#ccc' },
+    margin: { t: 50, b: 50, l: 60, r: 30 },
+    // Add map-like background shapes
+    shapes: [
+      // Equator line
+      { type: 'line', x0: -180, x1: 180, y0: 0, y1: 0, line: { color: 'rgba(255,215,0,0.2)', width: 1, dash: 'dot' } },
+      // Tropics
+      { type: 'line', x0: -180, x1: 180, y0: 23.5, y1: 23.5, line: { color: 'rgba(100,100,150,0.2)', width: 1, dash: 'dot' } },
+      { type: 'line', x0: -180, x1: 180, y0: -23.5, y1: -23.5, line: { color: 'rgba(100,100,150,0.2)', width: 1, dash: 'dot' } },
+      // Prime meridian
+      { type: 'line', x0: 0, x1: 0, y0: -90, y1: 90, line: { color: 'rgba(255,215,0,0.2)', width: 1, dash: 'dot' } }
+    ]
+  }), []);
+
+  // Handle click on airplane in the map
+  const handlePlotClick = useCallback((event) => {
+    if (event.points && event.points[0] && event.points[0].data.name === 'Aircraft') {
+      const pointIndex = event.points[0].pointIndex;
+      if (airplanes[pointIndex]) {
+        handleSelectItem(airplanes[pointIndex], 'airplane');
+      }
+    }
+  }, [airplanes, handleSelectItem]);
+
   // 3D Satellite visualization
   const satelliteTrace = useMemo(() => {
     const filtered = bodyFilter === 'all' ? satellites : satellites.filter(s => s.body.toLowerCase() === bodyFilter);
@@ -793,29 +925,7 @@ const LiveTracking = () => {
     };
   }, [satellites, bodyFilter]);
 
-  // Airplane 3D visualization (using scatter3d to avoid CDN dependencies)
-  const airplaneTrace = {
-    type: 'scatter3d',
-    mode: 'markers+text',
-    x: airplanes.map(a => parseFloat(a.lng)),
-    y: airplanes.map(a => parseFloat(a.lat)),
-    z: airplanes.map(a => a.altitude / 1000), // Convert to thousands of feet for better visualization
-    text: airplanes.map(a => a.callsign),
-    textposition: 'top center',
-    marker: {
-      size: 8,
-      color: airplanes.map(a => a.speed),
-      colorscale: 'YlOrRd',
-      showscale: true,
-      colorbar: {
-        title: { text: 'Speed (km/h)', font: { color: '#ccc' } },
-        tickfont: { color: '#ccc' }
-      }
-    },
-    hovertemplate: '%{text}<br>Alt: %{z:.0f}k ft<br>Lat: %{y}°<br>Lng: %{x}°<extra></extra>'
-  };
-
-  // Trajectory traces for selected item
+  // Trajectory traces for selected satellite
   const trajectoryTrace = useMemo(() => {
     if (!selectedItem) return null;
     
@@ -831,21 +941,7 @@ const LiveTracking = () => {
       };
     }
     
-    if (selectedItem.itemType === 'airplane' && selectedItem.trajectory) {
-      return {
-        type: 'scatter3d',
-        mode: 'lines+markers',
-        x: selectedItem.trajectory.map(p => p.lng),
-        y: selectedItem.trajectory.map(p => p.lat),
-        z: selectedItem.trajectory.map((p, i) => i === 0 ? 0 : i === selectedItem.trajectory.length - 1 ? 0 : selectedItem.altitude / 1000),
-        line: { color: '#FFD700', width: 4 },
-        marker: {
-          size: [10, 12, 10],
-          color: ['#00FF00', '#FFD700', '#FF4444']
-        },
-        name: 'Flight Path'
-      };
-    }
+    // Airplane trajectory is rendered in the custom world map
     return null;
   }, [selectedItem]);
 
@@ -861,20 +957,6 @@ const LiveTracking = () => {
     },
     font: { color: '#ccc' },
     margin: { t: 50, b: 50, l: 50, r: 50 }
-  };
-
-  const airplaneMapLayout = {
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(10, 10, 30, 0.8)',
-    title: { text: 'Active Flights', font: { color: '#FFD700', size: 16 } },
-    scene: {
-      xaxis: { title: 'Longitude', color: '#666', gridcolor: '#333' },
-      yaxis: { title: 'Latitude', color: '#666', gridcolor: '#333' },
-      zaxis: { title: 'Altitude (k ft)', color: '#666', gridcolor: '#333' },
-      bgcolor: 'rgba(10, 10, 30, 0.8)'
-    },
-    font: { color: '#ccc' },
-    margin: { t: 50, b: 30, l: 30, r: 30 }
   };
 
   return (
@@ -1044,10 +1126,11 @@ const LiveTracking = () => {
             />
           ) : (
             <Plot
-              data={trajectoryTrace ? [airplaneTrace, trajectoryTrace] : [airplaneTrace]}
+              data={airplaneMapData}
               layout={airplaneMapLayout}
               style={{ width: '100%', height: '450px' }}
               config={{ responsive: true, displayModeBar: true }}
+              onClick={handlePlotClick}
             />
           )}
         </Card>
@@ -1156,11 +1239,11 @@ const LiveTracking = () => {
                 </DetailItem>
                 <DetailItem color="#FFD700">
                   <div className="label">Departure Time</div>
-                  <div className="value">{new Date(selectedItem.departureTime).toLocaleTimeString()}</div>
+                  <div className="value">{selectedItem.departureTime ? new Date(selectedItem.departureTime).toLocaleTimeString() : 'N/A'}</div>
                 </DetailItem>
                 <DetailItem color="#4ECDC4">
                   <div className="label">ETA</div>
-                  <div className="value">{new Date(selectedItem.eta).toLocaleTimeString()}</div>
+                  <div className="value">{selectedItem.eta ? new Date(selectedItem.eta).toLocaleTimeString() : 'N/A'}</div>
                 </DetailItem>
                 <DetailItem color={selectedItem.status === 'In Flight' ? '#4ECDC4' : '#FF6B6B'}>
                   <div className="label">Status</div>
