@@ -115,6 +115,9 @@ const Navbar = () => {
         <NavLink to="/orbital-tracking" $active={isActive('/orbital-tracking')}>
           🛰️ Tracking
         </NavLink>
+        <NavLink to="/live-tracking" $active={isActive('/live-tracking')}>
+          📡 Live
+        </NavLink>
         <NavLink to="/research" $active={isActive('/research')}>
           📚 Research
         </NavLink>

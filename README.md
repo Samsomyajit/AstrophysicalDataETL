@@ -31,6 +31,15 @@ This project is a web application for extracting, transforming, and visualizing 
 - **Kepler's Third Law Visualization**: Orbital period vs semi-major axis
 - **Filter & Sort Options**: Filter by hazard status, proximity, or size
 
+### 📡 Live Tracking Dashboard
+- **Satellite Tracking**: Monitor satellites orbiting Earth, Moon, and Mars
+- **Aircraft Tracking**: View airplanes currently in the atmosphere
+- **Real-time Data**: Altitude, speed, and position information
+- **Trajectory Visualization**: View orbital paths and flight routes
+- **Detailed Information**: Origin, destination, orbital parameters
+- **Filter by Body**: Filter satellites by celestial body (Earth, Moon, Mars)
+- **Research Integration**: Connect tracking data with astrophysical research
+
 ### 📚 Research Findings
 - **Statistical Analysis**: Mean, median, standard deviation calculations
 - **Cumulative Size Distribution**: Power-law distribution visualization
@@ -106,6 +115,7 @@ This project is a web application for extracting, transforming, and visualizing 
       OrbitalSimulation.js - 3D orbital visualization
       SpaceMap.js          - 2D/3D space map
       OrbitalTracking.js   - Tracking dashboard
+      LiveTracking.js      - Live satellite & airplane tracking
     App.js
     index.js
 /scripts
@@ -139,6 +149,14 @@ The home page features interactive visualizations including:
 - View approach timeline
 - Analyze velocity distributions
 - Visualize Kepler's Third Law
+
+### 📡 Live Tracking
+- Track satellites around Earth, Moon, and Mars in real-time
+- Monitor aircraft currently in the atmosphere
+- View altitude, speed, and trajectory information
+- Select objects to see detailed information including origin and destination
+- Filter satellites by celestial body
+- Connect with research findings for deeper analysis
 
 ### 📚 Research Findings
 Detailed statistical analysis with:
