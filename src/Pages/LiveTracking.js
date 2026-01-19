@@ -764,7 +764,7 @@ const LiveTracking = () => {
 
   // Fetch satellite data from API or use simulated data
   const fetchSatelliteData = useCallback(async () => {
-    if (API_CONFIG.USE_SIMULATED_DATA || !API_CONFIG.N2YO_API_KEY) {
+    if (API_CONFIG.USE_SIMULATED_DATA) {
       setSatellites(generateSatelliteData());
       setDataSource('simulated');
       return;
