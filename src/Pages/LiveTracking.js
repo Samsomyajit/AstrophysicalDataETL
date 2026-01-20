@@ -106,6 +106,9 @@ const N2YO_CATEGORIES = {
 // API FUNCTIONS
 // ============================================================================
 
+// Visualization constants
+const SATELLITE_SCALE_FACTOR = 0.001; // Scale factor for satellite 3D visualization
+
 // Fetch satellites above observer location using N2YO API
 const fetchSatellitesAbove = async (categoryId = 0, searchRadius = 70) => {
   if (!API_CONFIG.N2YO_API_KEY) {
@@ -1114,7 +1117,6 @@ const LiveTracking = () => {
     // Determine which celestial body to show based on filter
     const currentBody = bodyFilter === 'all' ? 'earth' : bodyFilter;
     const bodyRadius = getBodyRadius(currentBody);
-    const scaleFactor = 0.001; // Scale down for visualization
     
     // Add latitude lines for planet wireframe
     for (let lat = -60; lat <= 60; lat += 30) {
@@ -1122,7 +1124,7 @@ const LiveTracking = () => {
       const x = [], y = [], z = [];
       for (let lng = -180; lng <= 180; lng += 5) {
         const lngRad = (lng * Math.PI) / 180;
-        const r = bodyRadius * scaleFactor;
+        const r = bodyRadius * SATELLITE_SCALE_FACTOR;
         x.push(r * Math.cos(latRad) * Math.cos(lngRad));
         y.push(r * Math.cos(latRad) * Math.sin(lngRad));
         z.push(r * Math.sin(latRad));
@@ -1144,7 +1146,7 @@ const LiveTracking = () => {
       const x = [], y = [], z = [];
       for (let lat = -90; lat <= 90; lat += 5) {
         const latRad = (lat * Math.PI) / 180;
-        const r = bodyRadius * scaleFactor;
+        const r = bodyRadius * SATELLITE_SCALE_FACTOR;
         x.push(r * Math.cos(latRad) * Math.cos(lngRad));
         y.push(r * Math.cos(latRad) * Math.sin(lngRad));
         z.push(r * Math.sin(latRad));
@@ -1161,17 +1163,19 @@ const LiveTracking = () => {
     }
     
     // Add satellites as markers positioned around the globe
+    // Pre-normalize body filter for case-insensitive comparison
+    const normalizedBodyFilter = bodyFilter.toLowerCase();
     const filteredForBody = bodyFilter === 'all' ? 
       satellites : 
-      satellites.filter(s => s.body.toLowerCase() === bodyFilter);
+      satellites.filter(s => s.body.toLowerCase() === normalizedBodyFilter);
     
     const satPositions = filteredForBody.map(s => {
       const br = getBodyRadius(s.body);
       const pos = latLngAltToCartesian(s.lat, s.lng, s.altitude, br);
       return {
-        x: pos.x * scaleFactor,
-        y: pos.y * scaleFactor,
-        z: pos.z * scaleFactor,
+        x: pos.x * SATELLITE_SCALE_FACTOR,
+        y: pos.y * SATELLITE_SCALE_FACTOR,
+        z: pos.z * SATELLITE_SCALE_FACTOR,
         ...s
       };
     });
@@ -1211,13 +1215,12 @@ const LiveTracking = () => {
     if (!selectedItem) return null;
     
     if (selectedItem.itemType === 'satellite' && selectedItem.trajectory) {
-      const scaleFactor = 0.001;
       return {
         type: 'scatter3d',
         mode: 'lines',
-        x: selectedItem.trajectory.map(p => p.x * scaleFactor),
-        y: selectedItem.trajectory.map(p => p.y * scaleFactor),
-        z: selectedItem.trajectory.map(p => p.z * scaleFactor),
+        x: selectedItem.trajectory.map(p => p.x * SATELLITE_SCALE_FACTOR),
+        y: selectedItem.trajectory.map(p => p.y * SATELLITE_SCALE_FACTOR),
+        z: selectedItem.trajectory.map(p => p.z * SATELLITE_SCALE_FACTOR),
         line: { color: '#00d4ff', width: 4 },
         name: `${selectedItem.name} Orbit`
       };

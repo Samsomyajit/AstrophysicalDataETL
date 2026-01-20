@@ -203,6 +203,9 @@ const NOTABLE_STARS = [
   { name: 'Bellatrix', constellation: 'Orion', ra: 81.282, dec: 6.349, distance: 250, magnitude: 1.64, spectralType: 'B2III', color: '#B0C4FF' }
 ];
 
+// Visualization constants
+const CONSTELLATION_LINE_DISTANCE = 100; // Light-years for constellation line rendering
+
 // Constellation line data (simplified connections between major stars)
 const CONSTELLATION_LINES = [
   // Orion
@@ -330,8 +333,8 @@ const SpaceMap = () => {
           });
         }
       } else if (line.points) {
-        // Use direct RA/Dec points
-        const positions = line.points.map(([ra, dec]) => raDecToCartesian(ra, dec, 100));
+        // Use direct RA/Dec points with constant distance for visualization
+        const positions = line.points.map(([ra, dec]) => raDecToCartesian(ra, dec, CONSTELLATION_LINE_DISTANCE));
         traces.push({
           type: 'scatter3d',
           mode: 'lines',
