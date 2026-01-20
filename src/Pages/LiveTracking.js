@@ -901,50 +901,98 @@ const LiveTracking = () => {
     }
   }, []);
 
-  // Simplified continent outline coordinates for world map background
-  const continentOutlines = useMemo(() => {
-    // Simplified continent outlines as line traces
-    const outlines = [
-      // North America outline (simplified)
-      { name: 'North America', lons: [-170, -130, -125, -117, -105, -95, -80, -65, -55, -60, -70, -80, -90, -100, -110, -120, -130, -140, -160, -170], 
-        lats: [60, 55, 50, 35, 25, 30, 25, 45, 50, 55, 60, 65, 70, 70, 65, 60, 60, 60, 55, 60] },
-      // South America outline (simplified)
-      { name: 'South America', lons: [-80, -75, -70, -55, -40, -35, -40, -50, -65, -75, -80, -80], 
-        lats: [10, 0, -10, -25, -20, -30, -50, -55, -55, -45, -15, 10] },
-      // Europe outline (simplified)
-      { name: 'Europe', lons: [-10, 0, 10, 20, 30, 40, 35, 30, 25, 10, 0, -10], 
-        lats: [35, 40, 45, 50, 55, 70, 65, 60, 55, 50, 45, 35] },
-      // Africa outline (simplified)
-      { name: 'Africa', lons: [-20, 10, 35, 50, 40, 35, 20, 10, 0, -10, -20], 
-        lats: [35, 35, 30, 10, -10, -35, -35, -15, 5, 10, 35] },
-      // Asia outline (simplified)
-      { name: 'Asia', lons: [25, 60, 80, 100, 120, 140, 170, 180, 180, 140, 100, 60, 25], 
-        lats: [35, 30, 25, 20, 25, 35, 65, 70, 50, 45, 45, 50, 35] },
-      // Australia outline (simplified)
-      { name: 'Australia', lons: [115, 130, 150, 155, 150, 130, 115], 
-        lats: [-25, -15, -15, -25, -40, -35, -25] }
+  // Detailed continent outlines for a realistic world map visualization
+  // These coordinates create a recognizable world map without requiring external resources
+  const continentData = useMemo(() => {
+    return [
+      // North America - main body
+      { name: 'North America', 
+        lons: [-168, -162, -155, -147, -140, -135, -130, -125, -122, -118, -115, -112, -108, -105, -100, -97, -93, -90, -85, -82, -78, -75, -70, -68, -65, -62, -58, -55, -52, -55, -60, -65, -70, -75, -80, -85, -90, -95, -100, -105, -110, -115, -120, -125, -130, -135, -140, -145, -150, -155, -160, -165, -168], 
+        lats: [65, 63, 60, 61, 60, 58, 55, 50, 47, 42, 36, 32, 29, 25, 26, 28, 30, 29, 25, 25, 26, 35, 42, 45, 47, 46, 47, 52, 55, 58, 60, 62, 65, 68, 68, 66, 65, 68, 70, 69, 67, 63, 60, 55, 54, 57, 60, 62, 65, 68, 70, 68, 65],
+        color: 'rgb(50, 90, 50)' },
+      // South America
+      { name: 'South America', 
+        lons: [-82, -80, -78, -75, -70, -65, -60, -55, -50, -45, -42, -38, -35, -38, -45, -50, -55, -60, -65, -68, -70, -73, -75, -78, -80, -82], 
+        lats: [8, 5, 0, -5, -10, -15, -20, -22, -23, -22, -20, -25, -30, -40, -52, -55, -55, -52, -48, -42, -35, -25, -15, -5, 0, 8],
+        color: 'rgb(55, 95, 55)' },
+      // Europe
+      { name: 'Europe', 
+        lons: [-10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 38, 35, 32, 30, 28, 25, 22, 18, 15, 10, 5, 0, -5, -10], 
+        lats: [36, 37, 38, 42, 44, 46, 50, 55, 60, 62, 68, 64, 60, 55, 50, 45, 42, 38, 36, 37, 36, 38, 40, 42, 36],
+        color: 'rgb(60, 100, 60)' },
+      // Africa
+      { name: 'Africa', 
+        lons: [-18, -12, -5, 5, 10, 15, 22, 30, 35, 40, 45, 50, 52, 50, 48, 42, 38, 35, 30, 25, 20, 15, 10, 5, 0, -5, -10, -15, -18], 
+        lats: [28, 32, 36, 37, 35, 32, 30, 30, 28, 22, 12, 5, 12, 8, 5, -5, -15, -22, -28, -33, -35, -28, -20, -10, 5, 10, 15, 20, 28],
+        color: 'rgb(65, 105, 55)' },
+      // Asia
+      { name: 'Asia', 
+        lons: [25, 30, 35, 40, 45, 50, 55, 60, 68, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 180, 175, 170, 165, 160, 155, 150, 145, 142, 140, 135, 130, 125, 120, 115, 110, 105, 100, 95, 92, 88, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25], 
+        lats: [42, 38, 35, 30, 28, 25, 25, 23, 22, 18, 12, 8, 22, 22, 18, 15, 18, 20, 22, 28, 35, 42, 46, 50, 55, 60, 62, 65, 68, 65, 62, 72, 75, 72, 70, 68, 65, 62, 58, 52, 48, 45, 42, 40, 38, 35, 32, 30, 28, 25, 22, 24, 26, 28, 25, 22, 25, 28, 32, 38, 42, 42, 40, 42, 42],
+        color: 'rgb(55, 95, 50)' },
+      // Australia
+      { name: 'Australia', 
+        lons: [113, 115, 118, 122, 128, 132, 135, 138, 142, 145, 148, 151, 153, 150, 147, 143, 140, 135, 130, 125, 120, 115, 113], 
+        lats: [-24, -22, -20, -18, -15, -12, -12, -14, -12, -15, -20, -24, -28, -35, -38, -40, -38, -35, -32, -30, -28, -26, -24],
+        color: 'rgb(70, 110, 60)' },
+      // Greenland
+      { name: 'Greenland', 
+        lons: [-73, -58, -40, -22, -20, -25, -35, -45, -55, -65, -73], 
+        lats: [78, 82, 83, 80, 72, 68, 65, 62, 65, 70, 78],
+        color: 'rgb(80, 120, 70)' },
+      // Antarctica (simplified)
+      { name: 'Antarctica', 
+        lons: [-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180], 
+        lats: [-70, -75, -78, -82, -78, -72, -70, -72, -78, -82, -78, -75, -70],
+        color: 'rgb(200, 210, 220)' },
+      // UK/Ireland
+      { name: 'British Isles', 
+        lons: [-10, -5, 0, 2, 0, -5, -10], 
+        lats: [50, 50, 52, 55, 58, 58, 50],
+        color: 'rgb(55, 95, 55)' },
+      // Japan
+      { name: 'Japan', 
+        lons: [130, 132, 135, 140, 145, 142, 138, 135, 132, 130], 
+        lats: [32, 33, 35, 38, 42, 44, 40, 35, 33, 32],
+        color: 'rgb(60, 100, 55)' },
+      // Indonesia
+      { name: 'Indonesia', 
+        lons: [95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 135, 130, 125, 120, 115, 110, 105, 100, 95], 
+        lats: [5, 3, 0, -5, -8, -10, -8, -5, -3, -5, -8, -10, -8, -8, -6, -5, -3, 0, 5],
+        color: 'rgb(55, 95, 50)' }
     ];
-    return outlines;
   }, []);
 
-  // Airplane map visualization using scatter plot with continent outlines
+  // Airplane map visualization using scatter with detailed continent outlines
   const airplaneMapData = useMemo(() => {
     const traces = [];
     
-    // Add continent outlines as background
-    continentOutlines.forEach(continent => {
+    // Add continent outlines as filled polygons
+    continentData.forEach(continent => {
       traces.push({
         type: 'scatter',
         mode: 'lines',
         x: continent.lons,
         y: continent.lats,
-        line: { color: 'rgba(100, 150, 200, 0.5)', width: 1.5 },
+        line: { color: 'rgb(100, 150, 100)', width: 1.5 },
         fill: 'toself',
-        fillcolor: 'rgba(30, 60, 90, 0.4)',
+        fillcolor: continent.color,
         name: continent.name,
         showlegend: false,
         hoverinfo: 'skip'
       });
+    });
+    
+    // Add ocean gradient effect (background)
+    traces.unshift({
+      type: 'scatter',
+      mode: 'none',
+      x: [-180, 180, 180, -180, -180],
+      y: [-90, -90, 90, 90, -90],
+      fill: 'toself',
+      fillcolor: 'rgb(20, 50, 80)',
+      showlegend: false,
+      hoverinfo: 'skip'
     });
     
     // Add airplane markers
@@ -955,7 +1003,7 @@ const LiveTracking = () => {
       y: airplanes.map(a => parseFloat(a.lat)),
       text: airplanes.map(a => a.callsign),
       textposition: 'top center',
-      textfont: { size: 9, color: '#fff' },
+      textfont: { size: 10, color: '#fff' },
       marker: {
         size: 14,
         color: airplanes.map(a => a.speed),
@@ -968,7 +1016,7 @@ const LiveTracking = () => {
           y: 0.75
         },
         symbol: 'triangle-up',
-        line: { width: 1, color: '#fff' }
+        line: { width: 1.5, color: '#fff' }
       },
       customdata: airplanes.map(a => [a.altitude, a.speed, a.origin?.code, a.destination?.code]),
       hovertemplate: '<b>%{text}</b><br>Route: %{customdata[2]} → %{customdata[3]}<br>Altitude: %{customdata[0]:,} ft<br>Speed: %{customdata[1]} km/h<br>Lat: %{y}° Lon: %{x}°<extra></extra>',
@@ -1003,7 +1051,7 @@ const LiveTracking = () => {
         mode: 'markers',
         x: [selectedItem.trajectory[0].lng],
         y: [selectedItem.trajectory[0].lat],
-        marker: { size: 12, color: '#00FF00', symbol: 'circle' },
+        marker: { size: 14, color: '#00FF00', symbol: 'circle' },
         name: `Origin: ${selectedItem.origin?.code}`,
         showlegend: true
       });
@@ -1013,39 +1061,41 @@ const LiveTracking = () => {
         mode: 'markers',
         x: [selectedItem.trajectory[2].lng],
         y: [selectedItem.trajectory[2].lat],
-        marker: { size: 12, color: '#FF4444', symbol: 'square' },
+        marker: { size: 14, color: '#FF4444', symbol: 'square' },
         name: `Dest: ${selectedItem.destination?.code}`,
         showlegend: true
       });
     }
 
     return traces;
-  }, [airplanes, selectedItem, continentOutlines]);
+  }, [airplanes, selectedItem, continentData]);
 
   const airplaneMapLayout = useMemo(() => ({
     paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(10, 30, 50, 0.9)',
-    title: { text: '✈️ Global Flight Tracker', font: { color: '#FFD700', size: 16 } },
+    plot_bgcolor: 'rgb(15, 40, 70)',
+    title: { text: '✈️ Global Flight Tracker - World Map', font: { color: '#FFD700', size: 16 } },
     xaxis: {
       title: { text: 'Longitude', font: { color: '#888' } },
       range: [-180, 180],
-      gridcolor: 'rgba(100,150,200,0.15)',
-      zerolinecolor: 'rgba(255,215,0,0.3)',
+      gridcolor: 'rgba(100,160,200,0.2)',
+      zerolinecolor: 'rgba(255,215,0,0.4)',
       tickfont: { color: '#888' },
-      dtick: 30
+      dtick: 30,
+      showgrid: true
     },
     yaxis: {
       title: { text: 'Latitude', font: { color: '#888' } },
       range: [-90, 90],
-      gridcolor: 'rgba(100,150,200,0.15)',
-      zerolinecolor: 'rgba(255,215,0,0.3)',
+      gridcolor: 'rgba(100,160,200,0.2)',
+      zerolinecolor: 'rgba(255,215,0,0.4)',
       tickfont: { color: '#888' },
       scaleanchor: 'x',
-      dtick: 30
+      dtick: 30,
+      showgrid: true
     },
     legend: {
       font: { color: '#ccc' },
-      bgcolor: 'rgba(0,0,0,0.5)',
+      bgcolor: 'rgba(0,0,0,0.6)',
       x: 0.01,
       y: 0.99
     },
@@ -1053,18 +1103,15 @@ const LiveTracking = () => {
     margin: { t: 50, b: 50, l: 60, r: 30 },
     shapes: [
       // Equator line
-      { type: 'line', x0: -180, x1: 180, y0: 0, y1: 0, line: { color: 'rgba(255,215,0,0.3)', width: 1 } },
+      { type: 'line', x0: -180, x1: 180, y0: 0, y1: 0, line: { color: 'rgba(255,100,100,0.4)', width: 1.5 } },
       // Tropics
-      { type: 'line', x0: -180, x1: 180, y0: 23.5, y1: 23.5, line: { color: 'rgba(100,150,200,0.2)', width: 1, dash: 'dot' } },
-      { type: 'line', x0: -180, x1: 180, y0: -23.5, y1: -23.5, line: { color: 'rgba(100,150,200,0.2)', width: 1, dash: 'dot' } },
+      { type: 'line', x0: -180, x1: 180, y0: 23.5, y1: 23.5, line: { color: 'rgba(255,200,100,0.3)', width: 1, dash: 'dot' } },
+      { type: 'line', x0: -180, x1: 180, y0: -23.5, y1: -23.5, line: { color: 'rgba(255,200,100,0.3)', width: 1, dash: 'dot' } },
       // Arctic/Antarctic circles
-      { type: 'line', x0: -180, x1: 180, y0: 66.5, y1: 66.5, line: { color: 'rgba(100,150,200,0.15)', width: 1, dash: 'dot' } },
-      { type: 'line', x0: -180, x1: 180, y0: -66.5, y1: -66.5, line: { color: 'rgba(100,150,200,0.15)', width: 1, dash: 'dot' } },
+      { type: 'line', x0: -180, x1: 180, y0: 66.5, y1: 66.5, line: { color: 'rgba(100,200,255,0.3)', width: 1, dash: 'dot' } },
+      { type: 'line', x0: -180, x1: 180, y0: -66.5, y1: -66.5, line: { color: 'rgba(100,200,255,0.3)', width: 1, dash: 'dot' } },
       // Prime meridian
-      { type: 'line', x0: 0, x1: 0, y0: -90, y1: 90, line: { color: 'rgba(255,215,0,0.3)', width: 1 } },
-      // International Date Line
-      { type: 'line', x0: 180, x1: 180, y0: -90, y1: 90, line: { color: 'rgba(100,150,200,0.2)', width: 1, dash: 'dot' } },
-      { type: 'line', x0: -180, x1: -180, y0: -90, y1: 90, line: { color: 'rgba(100,150,200,0.2)', width: 1, dash: 'dot' } }
+      { type: 'line', x0: 0, x1: 0, y0: -90, y1: 90, line: { color: 'rgba(255,215,0,0.4)', width: 1.5 } }
     ]
   }), []);
 

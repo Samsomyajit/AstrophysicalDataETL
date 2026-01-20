@@ -355,7 +355,7 @@ const SpaceMap = () => {
   const starMapLayout = useMemo(() => ({
     title: {
       text: '🌌 Interstellar Star Map - View from Earth',
-      font: { color: '#9370DB', size: 18 }
+      font: { color: '#9370DB', size: 20 }
     },
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',
@@ -363,20 +363,20 @@ const SpaceMap = () => {
       xaxis: { title: '', showticklabels: false, showgrid: false, zeroline: false, visible: false },
       yaxis: { title: '', showticklabels: false, showgrid: false, zeroline: false, visible: false },
       zaxis: { title: '', showticklabels: false, showgrid: false, zeroline: false, visible: false },
-      bgcolor: 'rgba(0, 0, 10, 1)',
+      bgcolor: 'rgba(0, 0, 15, 1)',
       aspectmode: 'cube',
       camera: {
-        eye: { x: 1.5, y: 1.5, z: 0.8 }
+        eye: { x: 2.2, y: 2.2, z: 1.5 }
       }
     },
     legend: {
-      font: { color: '#ccc' },
-      bgcolor: 'rgba(0,0,0,0.5)',
+      font: { color: '#ccc', size: 12 },
+      bgcolor: 'rgba(0,0,0,0.6)',
       x: 0.01,
       y: 0.99
     },
     font: { color: '#ccc' },
-    margin: { t: 50, b: 20, l: 20, r: 20 }
+    margin: { t: 60, b: 30, l: 30, r: 30 }
   }), []);
 
   // Handle star selection from plot click
@@ -719,7 +719,7 @@ const SpaceMap = () => {
             <Plot
               data={starMapData}
               layout={starMapLayout}
-              style={{ width: '100%', maxWidth: '1000px', height: '700px' }}
+              style={{ width: '100%', maxWidth: '1400px', height: '850px' }}
               config={{ responsive: true, displayModeBar: true }}
               onClick={handleStarClick}
             />
