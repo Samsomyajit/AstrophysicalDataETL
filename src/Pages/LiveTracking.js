@@ -106,6 +106,9 @@ const N2YO_CATEGORIES = {
 // API FUNCTIONS
 // ============================================================================
 
+// Visualization constants
+const SATELLITE_SCALE_FACTOR = 0.001; // Scale factor for satellite 3D visualization
+
 // Fetch satellites above observer location using N2YO API
 const fetchSatellitesAbove = async (categoryId = 0, searchRadius = 70) => {
   if (!API_CONFIG.N2YO_API_KEY) {
@@ -898,9 +901,99 @@ const LiveTracking = () => {
     }
   }, []);
 
-  // Airplane 2D map visualization using Plotly scatter with airplane-like markers
+  // Detailed continent outlines for a realistic world map visualization
+  // These coordinates create a recognizable world map without requiring external resources
+  const continentData = useMemo(() => {
+    return [
+      // North America - main body
+      { name: 'North America', 
+        lons: [-168, -162, -155, -147, -140, -135, -130, -125, -122, -118, -115, -112, -108, -105, -100, -97, -93, -90, -85, -82, -78, -75, -70, -68, -65, -62, -58, -55, -52, -55, -60, -65, -70, -75, -80, -85, -90, -95, -100, -105, -110, -115, -120, -125, -130, -135, -140, -145, -150, -155, -160, -165, -168], 
+        lats: [65, 63, 60, 61, 60, 58, 55, 50, 47, 42, 36, 32, 29, 25, 26, 28, 30, 29, 25, 25, 26, 35, 42, 45, 47, 46, 47, 52, 55, 58, 60, 62, 65, 68, 68, 66, 65, 68, 70, 69, 67, 63, 60, 55, 54, 57, 60, 62, 65, 68, 70, 68, 65],
+        color: 'rgb(50, 90, 50)' },
+      // South America
+      { name: 'South America', 
+        lons: [-82, -80, -78, -75, -70, -65, -60, -55, -50, -45, -42, -38, -35, -38, -45, -50, -55, -60, -65, -68, -70, -73, -75, -78, -80, -82], 
+        lats: [8, 5, 0, -5, -10, -15, -20, -22, -23, -22, -20, -25, -30, -40, -52, -55, -55, -52, -48, -42, -35, -25, -15, -5, 0, 8],
+        color: 'rgb(55, 95, 55)' },
+      // Europe
+      { name: 'Europe', 
+        lons: [-10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 38, 35, 32, 30, 28, 25, 22, 18, 15, 10, 5, 0, -5, -10], 
+        lats: [36, 37, 38, 42, 44, 46, 50, 55, 60, 62, 68, 64, 60, 55, 50, 45, 42, 38, 36, 37, 36, 38, 40, 42, 36],
+        color: 'rgb(60, 100, 60)' },
+      // Africa
+      { name: 'Africa', 
+        lons: [-18, -12, -5, 5, 10, 15, 22, 30, 35, 40, 45, 50, 52, 50, 48, 42, 38, 35, 30, 25, 20, 15, 10, 5, 0, -5, -10, -15, -18], 
+        lats: [28, 32, 36, 37, 35, 32, 30, 30, 28, 22, 12, 5, 12, 8, 5, -5, -15, -22, -28, -33, -35, -28, -20, -10, 5, 10, 15, 20, 28],
+        color: 'rgb(65, 105, 55)' },
+      // Asia
+      { name: 'Asia', 
+        lons: [25, 30, 35, 40, 45, 50, 55, 60, 68, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 180, 175, 170, 165, 160, 155, 150, 145, 142, 140, 135, 130, 125, 120, 115, 110, 105, 100, 95, 92, 88, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25], 
+        lats: [42, 38, 35, 30, 28, 25, 25, 23, 22, 18, 12, 8, 22, 22, 18, 15, 18, 20, 22, 28, 35, 42, 46, 50, 55, 60, 62, 65, 68, 65, 62, 72, 75, 72, 70, 68, 65, 62, 58, 52, 48, 45, 42, 40, 38, 35, 32, 30, 28, 25, 22, 24, 26, 28, 25, 22, 25, 28, 32, 38, 42, 42, 40, 42, 42],
+        color: 'rgb(55, 95, 50)' },
+      // Australia
+      { name: 'Australia', 
+        lons: [113, 115, 118, 122, 128, 132, 135, 138, 142, 145, 148, 151, 153, 150, 147, 143, 140, 135, 130, 125, 120, 115, 113], 
+        lats: [-24, -22, -20, -18, -15, -12, -12, -14, -12, -15, -20, -24, -28, -35, -38, -40, -38, -35, -32, -30, -28, -26, -24],
+        color: 'rgb(70, 110, 60)' },
+      // Greenland
+      { name: 'Greenland', 
+        lons: [-73, -58, -40, -22, -20, -25, -35, -45, -55, -65, -73], 
+        lats: [78, 82, 83, 80, 72, 68, 65, 62, 65, 70, 78],
+        color: 'rgb(80, 120, 70)' },
+      // Antarctica (simplified)
+      { name: 'Antarctica', 
+        lons: [-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180], 
+        lats: [-70, -75, -78, -82, -78, -72, -70, -72, -78, -82, -78, -75, -70],
+        color: 'rgb(200, 210, 220)' },
+      // UK/Ireland
+      { name: 'British Isles', 
+        lons: [-10, -5, 0, 2, 0, -5, -10], 
+        lats: [50, 50, 52, 55, 58, 58, 50],
+        color: 'rgb(55, 95, 55)' },
+      // Japan
+      { name: 'Japan', 
+        lons: [130, 132, 135, 140, 145, 142, 138, 135, 132, 130], 
+        lats: [32, 33, 35, 38, 42, 44, 40, 35, 33, 32],
+        color: 'rgb(60, 100, 55)' },
+      // Indonesia
+      { name: 'Indonesia', 
+        lons: [95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 135, 130, 125, 120, 115, 110, 105, 100, 95], 
+        lats: [5, 3, 0, -5, -8, -10, -8, -5, -3, -5, -8, -10, -8, -8, -6, -5, -3, 0, 5],
+        color: 'rgb(55, 95, 50)' }
+    ];
+  }, []);
+
+  // Airplane map visualization using scatter with detailed continent outlines
   const airplaneMapData = useMemo(() => {
     const traces = [];
+    
+    // Add continent outlines as filled polygons
+    continentData.forEach(continent => {
+      traces.push({
+        type: 'scatter',
+        mode: 'lines',
+        x: continent.lons,
+        y: continent.lats,
+        line: { color: 'rgb(100, 150, 100)', width: 1.5 },
+        fill: 'toself',
+        fillcolor: continent.color,
+        name: continent.name,
+        showlegend: false,
+        hoverinfo: 'skip'
+      });
+    });
+    
+    // Add ocean gradient effect (background)
+    traces.unshift({
+      type: 'scatter',
+      mode: 'none',
+      x: [-180, 180, 180, -180, -180],
+      y: [-90, -90, 90, 90, -90],
+      fill: 'toself',
+      fillcolor: 'rgb(20, 50, 80)',
+      showlegend: false,
+      hoverinfo: 'skip'
+    });
     
     // Add airplane markers
     traces.push({
@@ -910,7 +1003,7 @@ const LiveTracking = () => {
       y: airplanes.map(a => parseFloat(a.lat)),
       text: airplanes.map(a => a.callsign),
       textposition: 'top center',
-      textfont: { size: 9, color: '#fff' },
+      textfont: { size: 10, color: '#fff' },
       marker: {
         size: 14,
         color: airplanes.map(a => a.speed),
@@ -923,16 +1016,16 @@ const LiveTracking = () => {
           y: 0.75
         },
         symbol: 'triangle-up',
-        line: { width: 1, color: '#fff' }
+        line: { width: 1.5, color: '#fff' }
       },
       customdata: airplanes.map(a => [a.altitude, a.speed, a.origin?.code, a.destination?.code]),
-      hovertemplate: '<b>%{text}</b><br>Route: %{customdata[2]} → %{customdata[3]}<br>Altitude: %{customdata[0]:,} ft<br>Speed: %{customdata[1]} km/h<br>Lat: %{y}° Lng: %{x}°<extra></extra>',
+      hovertemplate: '<b>%{text}</b><br>Route: %{customdata[2]} → %{customdata[3]}<br>Altitude: %{customdata[0]:,} ft<br>Speed: %{customdata[1]} km/h<br>Lat: %{y}° Lon: %{x}°<extra></extra>',
       name: 'Aircraft'
     });
 
     // Add flight path for selected airplane
     if (selectedItem?.itemType === 'airplane' && selectedItem.trajectory && selectedItem.trajectory.length >= 3) {
-      // Origin to current
+      // Origin to current (completed path)
       traces.push({
         type: 'scatter',
         mode: 'lines',
@@ -940,9 +1033,9 @@ const LiveTracking = () => {
         y: [selectedItem.trajectory[0].lat, selectedItem.trajectory[1].lat],
         line: { color: '#00FF00', width: 3 },
         name: 'Completed',
-        showlegend: false
+        showlegend: true
       });
-      // Current to destination
+      // Current to destination (remaining path)
       traces.push({
         type: 'scatter',
         mode: 'lines',
@@ -950,7 +1043,7 @@ const LiveTracking = () => {
         y: [selectedItem.trajectory[1].lat, selectedItem.trajectory[2].lat],
         line: { color: '#FFD700', width: 2, dash: 'dash' },
         name: 'Remaining',
-        showlegend: false
+        showlegend: true
       });
       // Origin marker
       traces.push({
@@ -958,7 +1051,7 @@ const LiveTracking = () => {
         mode: 'markers',
         x: [selectedItem.trajectory[0].lng],
         y: [selectedItem.trajectory[0].lat],
-        marker: { size: 12, color: '#00FF00', symbol: 'circle' },
+        marker: { size: 14, color: '#00FF00', symbol: 'circle' },
         name: `Origin: ${selectedItem.origin?.code}`,
         showlegend: true
       });
@@ -968,51 +1061,57 @@ const LiveTracking = () => {
         mode: 'markers',
         x: [selectedItem.trajectory[2].lng],
         y: [selectedItem.trajectory[2].lat],
-        marker: { size: 12, color: '#FF4444', symbol: 'square' },
+        marker: { size: 14, color: '#FF4444', symbol: 'square' },
         name: `Dest: ${selectedItem.destination?.code}`,
         showlegend: true
       });
     }
 
     return traces;
-  }, [airplanes, selectedItem]);
+  }, [airplanes, selectedItem, continentData]);
 
   const airplaneMapLayout = useMemo(() => ({
     paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(10, 20, 40, 0.9)',
-    title: { text: '✈️ Global Flight Tracker', font: { color: '#FFD700', size: 16 } },
+    plot_bgcolor: 'rgb(15, 40, 70)',
+    title: { text: '✈️ Global Flight Tracker - World Map', font: { color: '#FFD700', size: 16 } },
     xaxis: {
       title: { text: 'Longitude', font: { color: '#888' } },
       range: [-180, 180],
-      gridcolor: 'rgba(100,100,150,0.2)',
-      zerolinecolor: 'rgba(100,100,150,0.3)',
-      tickfont: { color: '#888' }
+      gridcolor: 'rgba(100,160,200,0.2)',
+      zerolinecolor: 'rgba(255,215,0,0.4)',
+      tickfont: { color: '#888' },
+      dtick: 30,
+      showgrid: true
     },
     yaxis: {
       title: { text: 'Latitude', font: { color: '#888' } },
       range: [-90, 90],
-      gridcolor: 'rgba(100,100,150,0.2)',
-      zerolinecolor: 'rgba(100,100,150,0.3)',
+      gridcolor: 'rgba(100,160,200,0.2)',
+      zerolinecolor: 'rgba(255,215,0,0.4)',
       tickfont: { color: '#888' },
-      scaleanchor: 'x'
+      scaleanchor: 'x',
+      dtick: 30,
+      showgrid: true
     },
     legend: {
       font: { color: '#ccc' },
-      bgcolor: 'rgba(0,0,0,0.5)',
+      bgcolor: 'rgba(0,0,0,0.6)',
       x: 0.01,
       y: 0.99
     },
     font: { color: '#ccc' },
     margin: { t: 50, b: 50, l: 60, r: 30 },
-    // Add map-like background shapes
     shapes: [
       // Equator line
-      { type: 'line', x0: -180, x1: 180, y0: 0, y1: 0, line: { color: 'rgba(255,215,0,0.2)', width: 1, dash: 'dot' } },
+      { type: 'line', x0: -180, x1: 180, y0: 0, y1: 0, line: { color: 'rgba(255,100,100,0.4)', width: 1.5 } },
       // Tropics
-      { type: 'line', x0: -180, x1: 180, y0: 23.5, y1: 23.5, line: { color: 'rgba(100,100,150,0.2)', width: 1, dash: 'dot' } },
-      { type: 'line', x0: -180, x1: 180, y0: -23.5, y1: -23.5, line: { color: 'rgba(100,100,150,0.2)', width: 1, dash: 'dot' } },
+      { type: 'line', x0: -180, x1: 180, y0: 23.5, y1: 23.5, line: { color: 'rgba(255,200,100,0.3)', width: 1, dash: 'dot' } },
+      { type: 'line', x0: -180, x1: 180, y0: -23.5, y1: -23.5, line: { color: 'rgba(255,200,100,0.3)', width: 1, dash: 'dot' } },
+      // Arctic/Antarctic circles
+      { type: 'line', x0: -180, x1: 180, y0: 66.5, y1: 66.5, line: { color: 'rgba(100,200,255,0.3)', width: 1, dash: 'dot' } },
+      { type: 'line', x0: -180, x1: 180, y0: -66.5, y1: -66.5, line: { color: 'rgba(100,200,255,0.3)', width: 1, dash: 'dot' } },
       // Prime meridian
-      { type: 'line', x0: 0, x1: 0, y0: -90, y1: 90, line: { color: 'rgba(255,215,0,0.2)', width: 1, dash: 'dot' } }
+      { type: 'line', x0: 0, x1: 0, y0: -90, y1: 90, line: { color: 'rgba(255,215,0,0.4)', width: 1.5 } }
     ]
   }), []);
 
@@ -1026,20 +1125,120 @@ const LiveTracking = () => {
     }
   }, [airplanes, handleSelectItem]);
 
-  // 3D Satellite visualization
-  const satelliteTrace = useMemo(() => {
-    const filtered = bodyFilter === 'all' ? satellites : satellites.filter(s => s.body.toLowerCase() === bodyFilter);
+  // Helper to convert lat/lng/alt to 3D Cartesian coordinates
+  const latLngAltToCartesian = useCallback((lat, lng, altitude, bodyRadius) => {
+    const latRad = (parseFloat(lat) * Math.PI) / 180;
+    const lngRad = (parseFloat(lng) * Math.PI) / 180;
+    const r = bodyRadius + altitude;
     return {
+      x: r * Math.cos(latRad) * Math.cos(lngRad),
+      y: r * Math.cos(latRad) * Math.sin(lngRad),
+      z: r * Math.sin(latRad)
+    };
+  }, []);
+
+  // Get body radius based on celestial body name
+  const getBodyRadius = useCallback((bodyName) => {
+    switch(bodyName?.toLowerCase()) {
+      case 'earth': return 6371;
+      case 'moon': return 1737;
+      case 'mars': return 3390;
+      default: return 6371;
+    }
+  }, []);
+
+  // Get body color based on celestial body name
+  const getBodyColor = useCallback((bodyName) => {
+    switch(bodyName?.toLowerCase()) {
+      case 'earth': return '#1e90ff';
+      case 'moon': return '#808080';
+      case 'mars': return '#cd5c5c';
+      default: return '#1e90ff';
+    }
+  }, []);
+
+  // 3D Satellite visualization with 3D globe
+  const satellite3DData = useMemo(() => {
+    const traces = [];
+    
+    // Determine which celestial body to show based on filter
+    const currentBody = bodyFilter === 'all' ? 'earth' : bodyFilter;
+    const bodyRadius = getBodyRadius(currentBody);
+    
+    // Add latitude lines for planet wireframe
+    for (let lat = -60; lat <= 60; lat += 30) {
+      const latRad = (lat * Math.PI) / 180;
+      const x = [], y = [], z = [];
+      for (let lng = -180; lng <= 180; lng += 5) {
+        const lngRad = (lng * Math.PI) / 180;
+        const r = bodyRadius * SATELLITE_SCALE_FACTOR;
+        x.push(r * Math.cos(latRad) * Math.cos(lngRad));
+        y.push(r * Math.cos(latRad) * Math.sin(lngRad));
+        z.push(r * Math.sin(latRad));
+      }
+      traces.push({
+        type: 'scatter3d',
+        mode: 'lines',
+        x, y, z,
+        line: { color: getBodyColor(currentBody), width: 1 },
+        name: `${currentBody} lat ${lat}°`,
+        showlegend: false,
+        hoverinfo: 'skip'
+      });
+    }
+    
+    // Add longitude lines
+    for (let lng = -180; lng < 180; lng += 30) {
+      const lngRad = (lng * Math.PI) / 180;
+      const x = [], y = [], z = [];
+      for (let lat = -90; lat <= 90; lat += 5) {
+        const latRad = (lat * Math.PI) / 180;
+        const r = bodyRadius * SATELLITE_SCALE_FACTOR;
+        x.push(r * Math.cos(latRad) * Math.cos(lngRad));
+        y.push(r * Math.cos(latRad) * Math.sin(lngRad));
+        z.push(r * Math.sin(latRad));
+      }
+      traces.push({
+        type: 'scatter3d',
+        mode: 'lines',
+        x, y, z,
+        line: { color: getBodyColor(currentBody), width: 1 },
+        name: `${currentBody} lng ${lng}°`,
+        showlegend: false,
+        hoverinfo: 'skip'
+      });
+    }
+    
+    // Add satellites as markers positioned around the globe
+    // Pre-normalize body filter for case-insensitive comparison
+    const normalizedBodyFilter = bodyFilter.toLowerCase();
+    const filteredForBody = bodyFilter === 'all' ? 
+      satellites : 
+      satellites.filter(s => s.body.toLowerCase() === normalizedBodyFilter);
+    
+    const satPositions = filteredForBody.map(s => {
+      const br = getBodyRadius(s.body);
+      const pos = latLngAltToCartesian(s.lat, s.lng, s.altitude, br);
+      return {
+        x: pos.x * SATELLITE_SCALE_FACTOR,
+        y: pos.y * SATELLITE_SCALE_FACTOR,
+        z: pos.z * SATELLITE_SCALE_FACTOR,
+        ...s
+      };
+    });
+    
+    traces.push({
       type: 'scatter3d',
       mode: 'markers+text',
-      x: filtered.map(s => parseFloat(s.lng)),
-      y: filtered.map(s => parseFloat(s.lat)),
-      z: filtered.map(s => s.altitude),
-      text: filtered.map(s => s.name),
+      x: satPositions.map(s => s.x),
+      y: satPositions.map(s => s.y),
+      z: satPositions.map(s => s.z),
+      text: satPositions.map(s => s.name),
       textposition: 'top center',
+      textfont: { size: 8, color: '#fff' },
       marker: {
         size: 8,
-        color: filtered.map(s => {
+        color: satPositions.map(s => {
           switch(s.body) {
             case 'Earth': return '#4ECDC4';
             case 'Moon': return '#C0C0C0';
@@ -1047,13 +1246,18 @@ const LiveTracking = () => {
             default: return '#9370DB';
           }
         }),
-        symbol: 'diamond'
+        symbol: 'diamond',
+        line: { width: 1, color: '#fff' }
       },
-      hovertemplate: '%{text}<br>Alt: %{z} km<br>Lat: %{y}°<br>Lng: %{x}°<extra></extra>'
-    };
-  }, [satellites, bodyFilter]);
+      customdata: satPositions.map(s => [s.altitude, s.body, s.type, s.noradId]),
+      hovertemplate: '<b>%{text}</b><br>Body: %{customdata[1]}<br>Altitude: %{customdata[0]} km<br>Type: %{customdata[2]}<br>NORAD ID: %{customdata[3]}<extra></extra>',
+      name: 'Satellites'
+    });
+    
+    return traces;
+  }, [satellites, bodyFilter, getBodyRadius, getBodyColor, latLngAltToCartesian]);
 
-  // Trajectory traces for selected satellite
+  // Trajectory traces for selected satellite (orbital ring)
   const trajectoryTrace = useMemo(() => {
     if (!selectedItem) return null;
     
@@ -1061,11 +1265,11 @@ const LiveTracking = () => {
       return {
         type: 'scatter3d',
         mode: 'lines',
-        x: selectedItem.trajectory.map(p => p.x / 100),
-        y: selectedItem.trajectory.map(p => p.y / 100),
-        z: selectedItem.trajectory.map(p => p.z / 100),
-        line: { color: '#00d4ff', width: 3 },
-        name: 'Orbit Path'
+        x: selectedItem.trajectory.map(p => p.x * SATELLITE_SCALE_FACTOR),
+        y: selectedItem.trajectory.map(p => p.y * SATELLITE_SCALE_FACTOR),
+        z: selectedItem.trajectory.map(p => p.z * SATELLITE_SCALE_FACTOR),
+        line: { color: '#00d4ff', width: 4 },
+        name: `${selectedItem.name} Orbit`
       };
     }
     
@@ -1073,19 +1277,32 @@ const LiveTracking = () => {
     return null;
   }, [selectedItem]);
 
-  const satellite3DLayout = {
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(10, 10, 30, 0.8)',
-    title: { text: 'Satellite Positions', font: { color: '#00d4ff', size: 16 } },
-    scene: {
-      xaxis: { title: 'Longitude', color: '#666', gridcolor: '#333' },
-      yaxis: { title: 'Latitude', color: '#666', gridcolor: '#333' },
-      zaxis: { title: 'Altitude (km)', color: '#666', gridcolor: '#333' },
-      bgcolor: 'rgba(10, 10, 30, 0.8)'
-    },
-    font: { color: '#ccc' },
-    margin: { t: 50, b: 50, l: 50, r: 50 }
-  };
+  const satellite3DLayout = useMemo(() => {
+    const currentBody = bodyFilter === 'all' ? 'Earth' : bodyFilter.charAt(0).toUpperCase() + bodyFilter.slice(1);
+    return {
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(10, 10, 30, 0.8)',
+      title: { text: `🌐 3D ${currentBody} Satellite View`, font: { color: '#00d4ff', size: 16 } },
+      scene: {
+        xaxis: { title: '', showticklabels: false, showgrid: false, zeroline: false, showspikes: false, visible: false },
+        yaxis: { title: '', showticklabels: false, showgrid: false, zeroline: false, showspikes: false, visible: false },
+        zaxis: { title: '', showticklabels: false, showgrid: false, zeroline: false, showspikes: false, visible: false },
+        bgcolor: 'rgba(5, 5, 20, 1)',
+        aspectmode: 'data',
+        camera: {
+          eye: { x: 1.8, y: 1.8, z: 1.2 }
+        }
+      },
+      legend: {
+        font: { color: '#ccc' },
+        bgcolor: 'rgba(0,0,0,0.5)',
+        x: 0.01,
+        y: 0.99
+      },
+      font: { color: '#ccc' },
+      margin: { t: 50, b: 20, l: 20, r: 20 }
+    };
+  }, [bodyFilter]);
 
   return (
     <PageContainer>
@@ -1247,7 +1464,7 @@ const LiveTracking = () => {
         <Card style={{ gridColumn: 'span 1' }}>
           {activeTab === 'satellites' ? (
             <Plot
-              data={trajectoryTrace ? [satelliteTrace, trajectoryTrace] : [satelliteTrace]}
+              data={trajectoryTrace ? [...satellite3DData, trajectoryTrace] : satellite3DData}
               layout={satellite3DLayout}
               style={{ width: '100%', height: '450px' }}
               config={{ responsive: true, displayModeBar: true }}
