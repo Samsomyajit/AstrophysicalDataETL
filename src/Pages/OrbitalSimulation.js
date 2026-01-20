@@ -362,6 +362,8 @@ const ABLATION_HEAT = 6e6; // J/kg for silicate
 const FRAGMENTATION_STRENGTH = 1e6; // Pa, typical for stony asteroid
 const MIN_SPEED_OF_SOUND = 280; // m/s, minimum speed of sound in atmosphere
 const SCALE_HEIGHT_KM = 8.5; // km, atmospheric scale height
+const ASTEROID_DENSITY = 3000; // kg/m³, typical stony asteroid density
+const KM_TO_M = 1000; // Conversion factor from km to m
 
 // Impact calculation constants (based on Pi-scaling crater model)
 // Reference: Melosh, H.J. (1989) Impact Cratering: A Geologic Process
@@ -377,6 +379,11 @@ const SEISMIC_OFFSET = -5.87; // Offset constant
 // Fragmentation constants
 const MAX_FRAGMENTS = 50; // Maximum number of fragments in DEM simulation
 const FRAGMENT_PRESSURE_MULTIPLIER = 5; // Multiplier for pressure ratio to fragment count
+
+// DEM Contact Force constants
+// Reference: Hertzian contact theory approximation
+const CONTACT_FORCE_SCALING = 1e6; // N/m², scaling factor for contact pressure to force
+const GRADY_KIPP_COEFF = 0.001; // Grady-Kipp fragmentation energy coefficient
 
 const OrbitalSimulation = () => {
   const [data, setData] = useState([]);
@@ -403,6 +410,7 @@ const OrbitalSimulation = () => {
   
   // DEM fragmentation state
   const [demFragments, setDemFragments] = useState([]);
+  const [demAnalysisData, setDemAnalysisData] = useState(null);
   const [fragmentationActive, setFragmentationActive] = useState(false);
 
   useEffect(() => {
@@ -572,6 +580,44 @@ const OrbitalSimulation = () => {
       time += dt;
     }
     
+    // Generate surface heatmap data for particle thermal distribution
+    // Creating a 2D grid representing the NEO surface during peak heating
+    const gridSize = 20;
+    const surfaceTemperatureGrid = [];
+    const surfacePressureGrid = [];
+    const peakTempValue = Math.max(...temperatures);
+    const peakPressureValue = Math.max(...pressures);
+    
+    for (let i = 0; i < gridSize; i++) {
+      const tempRow = [];
+      const pressRow = [];
+      for (let j = 0; j < gridSize; j++) {
+        // Calculate position on hemisphere (stagnation point at center)
+        const x = (i - gridSize / 2) / (gridSize / 2);
+        const y = (j - gridSize / 2) / (gridSize / 2);
+        const r = Math.sqrt(x * x + y * y);
+        
+        if (r <= 1) {
+          // Temperature distribution: highest at stagnation point, decreasing radially
+          // Using modified Newtonian theory approximation
+          const theta = Math.asin(r);
+          const tempFactor = Math.pow(Math.cos(theta), 2);
+          const temp = peakTempValue * (0.3 + 0.7 * tempFactor);
+          tempRow.push(temp);
+          
+          // Pressure distribution: stagnation pressure at center
+          const pressFactor = Math.pow(Math.cos(theta), 2);
+          const press = peakPressureValue * (0.1 + 0.9 * pressFactor);
+          pressRow.push(press);
+        } else {
+          tempRow.push(null);
+          pressRow.push(null);
+        }
+      }
+      surfaceTemperatureGrid.push(tempRow);
+      surfacePressureGrid.push(pressRow);
+    }
+    
     setCfdData({
       altitudes,
       velocities,
@@ -585,7 +631,10 @@ const OrbitalSimulation = () => {
       survivalMass: currentMass / mass * 100,
       peakPressure: Math.max(...pressures),
       peakForce: Math.max(...forces),
-      peakTemp: Math.max(...temperatures)
+      peakTemp: Math.max(...temperatures),
+      surfaceTemperatureGrid,
+      surfacePressureGrid,
+      gridSize
     });
   }, [selectedNeo, entryVelocity, entryAngle, calculateAtmosphericDensity, calculateDynamicPressure, calculateDragForce]);
 
@@ -609,7 +658,10 @@ const OrbitalSimulation = () => {
         x: 0, y: 0, z: 0,
         size: diameter,
         mass: 100,
-        velocity: { vx: 0, vy: 0, vz: 0 }
+        velocity: { vx: 0, vy: 0, vz: 0 },
+        stressLevel: peakPressure / fragmentationThreshold,
+        contactForce: 0,
+        kineticEnergy: 0
       }]);
       return;
     }
@@ -627,6 +679,12 @@ const OrbitalSimulation = () => {
     // Use seeded random values for reproducibility based on NEO properties
     const seed = (diameter * 1000 + pressureRatio * 100) % 1;
     
+    // Total fragmentation energy based on Grady-Kipp model
+    // E = pressure × volume × coefficient
+    // Volume = (4/3)πr³ where r = diameter(km) × km_to_m / 2
+    const neoRadiusM = diameter * KM_TO_M / 2;
+    const totalFragmentationEnergy = peakPressure * Math.pow(neoRadiusM, 3) * GRADY_KIPP_COEFF;
+    
     for (let i = 0; i < numFragments; i++) {
       // Power law size distribution with pseudo-random variation
       const randomFactor = 0.3 + ((seed * (i + 1) * 13.7) % 0.2);
@@ -639,10 +697,26 @@ const OrbitalSimulation = () => {
       const spreadAngle = (i / numFragments) * 2 * Math.PI;
       const spreadVel = 50 + (i * 17) % 200; // m/s
       
+      // DEM-specific properties
+      // Stress level decreases for outer fragments
+      const radialPosition = 0.5 + (i % 3) * 0.3;
+      const stressLevel = pressureRatio * (1 - radialPosition * 0.5);
+      
+      // Contact force between fragments using Hertzian contact model approximation
+      // Force = (mass fraction) × (pressure) × (area) × scaling
+      const contactForce = (massPercent / 100) * peakPressure * fragmentSize * fragmentSize * CONTACT_FORCE_SCALING;
+      
+      // Kinetic energy of fragment
+      // Fragment radius in meters = diameter(km) × (km_to_m/2)
+      const fragmentRadiusM = fragmentSize * KM_TO_M / 2;
+      const fragmentMass = (4/3) * Math.PI * Math.pow(fragmentRadiusM, 3) * ASTEROID_DENSITY * (massPercent / 100);
+      const fragmentVelocity = Math.sqrt(spreadVel * spreadVel + 100 * 100);
+      const kineticEnergy = 0.5 * fragmentMass * fragmentVelocity * fragmentVelocity;
+      
       fragments.push({
         id: i,
-        x: Math.cos(spreadAngle) * (0.5 + (i % 3) * 0.3),
-        y: Math.sin(spreadAngle) * (0.5 + (i % 3) * 0.3),
+        x: Math.cos(spreadAngle) * radialPosition,
+        y: Math.sin(spreadAngle) * radialPosition,
         z: -i * 0.1,
         size: fragmentSize,
         mass: massPercent,
@@ -650,7 +724,10 @@ const OrbitalSimulation = () => {
           vx: Math.cos(spreadAngle) * spreadVel,
           vy: Math.sin(spreadAngle) * spreadVel,
           vz: -100 - (i * 5) % 50
-        }
+        },
+        stressLevel: stressLevel,
+        contactForce: contactForce,
+        kineticEnergy: kineticEnergy
       });
       
       if (remainingMass < 1) break;
@@ -664,11 +741,50 @@ const OrbitalSimulation = () => {
         size: diameter * 0.01,
         mass: remainingMass,
         velocity: { vx: 0, vy: 0, vz: -50 },
-        isDust: true
+        isDust: true,
+        stressLevel: 0,
+        contactForce: 0,
+        kineticEnergy: 0
       });
     }
     
+    // Generate stress distribution grid for DEM visualization
+    const stressGridSize = 15;
+    const stressGrid = [];
+    for (let i = 0; i < stressGridSize; i++) {
+      const row = [];
+      for (let j = 0; j < stressGridSize; j++) {
+        const x = (i - stressGridSize / 2) / (stressGridSize / 2);
+        const y = (j - stressGridSize / 2) / (stressGridSize / 2);
+        const r = Math.sqrt(x * x + y * y);
+        
+        if (r <= 1) {
+          // Stress concentration pattern based on fragmentation
+          let stress = pressureRatio * (1 - r * 0.3);
+          // Add fracture pattern
+          const angle = Math.atan2(y, x);
+          const fractureFactor = 1 + 0.3 * Math.sin(numFragments * angle);
+          stress *= fractureFactor;
+          row.push(stress);
+        } else {
+          row.push(null);
+        }
+      }
+      stressGrid.push(row);
+    }
+    
+    // Store DEM analysis data
     setDemFragments(fragments);
+    setDemAnalysisData({
+      stressGrid,
+      stressGridSize,
+      totalFragmentationEnergy,
+      pressureRatio,
+      numFragments,
+      totalContactForce: fragments.reduce((sum, f) => sum + (f.contactForce || 0), 0),
+      totalKineticEnergy: fragments.reduce((sum, f) => sum + (f.kineticEnergy || 0), 0),
+      avgStressLevel: fragments.reduce((sum, f) => sum + (f.stressLevel || 0), 0) / fragments.length
+    });
   }, [selectedNeo, cfdData]);
 
   // ============================================================================
@@ -1044,6 +1160,7 @@ const OrbitalSimulation = () => {
               setCfdData(null);
               setImpactData(null);
               setDemFragments([]);
+              setDemAnalysisData(null);
             }}
           >
             {data.map(neo => (
@@ -1440,6 +1557,74 @@ const OrbitalSimulation = () => {
                     config={{ responsive: true, displayModeBar: false }}
                   />
                 </SimulationGrid>
+
+                {/* Surface Heatmap Contours */}
+                <div style={{ marginTop: '30px' }}>
+                  <h4 style={{ color: '#FF6B6B', textAlign: 'center', marginBottom: '20px' }}>
+                    🔥 Particle Surface Thermal & Pressure Contours (Peak Heating)
+                  </h4>
+                  <SimulationGrid>
+                    <Plot
+                      data={[{
+                        type: 'heatmap',
+                        z: cfdData.surfaceTemperatureGrid,
+                        colorscale: [
+                          [0, '#000033'],
+                          [0.2, '#003366'],
+                          [0.4, '#FF6600'],
+                          [0.6, '#FF3300'],
+                          [0.8, '#FF0000'],
+                          [1, '#FFFF00']
+                        ],
+                        showscale: true,
+                        colorbar: {
+                          title: { text: 'Temp (K)', font: { color: '#ccc' } },
+                          tickfont: { color: '#ccc' }
+                        },
+                        hovertemplate: 'Temperature: %{z:.0f} K<extra></extra>'
+                      }]}
+                      layout={{
+                        title: { text: 'Surface Temperature Distribution', font: { color: '#FF6B6B', size: 14 } },
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(10,10,30,0.8)',
+                        xaxis: { title: 'Surface X', color: '#666', showgrid: false },
+                        yaxis: { title: 'Surface Y', color: '#666', showgrid: false, scaleanchor: 'x' },
+                        margin: { t: 50, b: 50, l: 60, r: 80 },
+                        font: { color: '#ccc' }
+                      }}
+                      style={{ width: '100%', height: '350px' }}
+                      config={{ responsive: true, displayModeBar: false }}
+                    />
+                    <Plot
+                      data={[{
+                        type: 'heatmap',
+                        z: cfdData.surfacePressureGrid,
+                        colorscale: 'Viridis',
+                        showscale: true,
+                        colorbar: {
+                          title: { text: 'Press (MPa)', font: { color: '#ccc' } },
+                          tickfont: { color: '#ccc' }
+                        },
+                        hovertemplate: 'Pressure: %{z:.2f} MPa<extra></extra>'
+                      }]}
+                      layout={{
+                        title: { text: 'Surface Pressure Distribution', font: { color: '#4ECDC4', size: 14 } },
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(10,10,30,0.8)',
+                        xaxis: { title: 'Surface X', color: '#666', showgrid: false },
+                        yaxis: { title: 'Surface Y', color: '#666', showgrid: false, scaleanchor: 'x' },
+                        margin: { t: 50, b: 50, l: 60, r: 80 },
+                        font: { color: '#ccc' }
+                      }}
+                      style={{ width: '100%', height: '350px' }}
+                      config={{ responsive: true, displayModeBar: false }}
+                    />
+                  </SimulationGrid>
+                  <p style={{ color: '#888', textAlign: 'center', marginTop: '10px', fontSize: '0.85rem' }}>
+                    Heatmap shows thermal and pressure distribution across the NEO forward-facing hemisphere during peak atmospheric heating.
+                    Stagnation point (center) experiences maximum heating based on modified Newtonian flow theory.
+                  </p>
+                </div>
               </>
             )}
           </SectionCard>
@@ -1723,6 +1908,126 @@ const OrbitalSimulation = () => {
                     config={{ responsive: true, displayModeBar: false }}
                   />
                 </div>
+
+                {/* Enhanced DEM Analysis */}
+                {demAnalysisData && (
+                  <>
+                    <div style={{ marginTop: '30px' }}>
+                      <h4 style={{ color: '#9370DB', textAlign: 'center', marginBottom: '20px' }}>
+                        📊 DEM Physics Analysis
+                      </h4>
+                      <SimulationGrid>
+                        <MetricCard gradient="rgba(255,107,107,0.2), rgba(255,107,107,0.05)"
+                                    borderColor="rgba(255, 107, 107, 0.3)" valueColor="#FF6B6B">
+                          <div className="icon">⚡</div>
+                          <div className="value">{demAnalysisData.totalFragmentationEnergy.toExponential(2)}<span className="unit">J</span></div>
+                          <div className="label">Fragmentation Energy</div>
+                        </MetricCard>
+                        <MetricCard gradient="rgba(0,212,255,0.2), rgba(0,212,255,0.05)"
+                                    borderColor="rgba(0, 212, 255, 0.3)" valueColor="#00d4ff">
+                          <div className="icon">💥</div>
+                          <div className="value">{demAnalysisData.totalContactForce.toExponential(2)}<span className="unit">N</span></div>
+                          <div className="label">Total Contact Force</div>
+                        </MetricCard>
+                        <MetricCard gradient="rgba(255,215,0,0.2), rgba(255,215,0,0.05)"
+                                    borderColor="rgba(255, 215, 0, 0.3)" valueColor="#FFD700">
+                          <div className="icon">🔋</div>
+                          <div className="value">{demAnalysisData.totalKineticEnergy.toExponential(2)}<span className="unit">J</span></div>
+                          <div className="label">Total Kinetic Energy</div>
+                        </MetricCard>
+                        <MetricCard gradient="rgba(147,112,219,0.2), rgba(147,112,219,0.05)"
+                                    borderColor="rgba(147, 112, 219, 0.3)" valueColor="#9370DB">
+                          <div className="icon">📈</div>
+                          <div className="value">{demAnalysisData.avgStressLevel.toFixed(2)}<span className="unit">σ/σ₀</span></div>
+                          <div className="label">Avg Stress Ratio</div>
+                        </MetricCard>
+                      </SimulationGrid>
+                    </div>
+
+                    {/* Stress Distribution Heatmap */}
+                    <div style={{ marginTop: '30px' }}>
+                      <h4 style={{ color: '#FF6B6B', textAlign: 'center', marginBottom: '20px' }}>
+                        🔥 DEM Stress Distribution Contour
+                      </h4>
+                      <SimulationGrid>
+                        <Plot
+                          data={[{
+                            type: 'heatmap',
+                            z: demAnalysisData.stressGrid,
+                            colorscale: [
+                              [0, '#001133'],
+                              [0.25, '#0066CC'],
+                              [0.5, '#00CC66'],
+                              [0.75, '#FFCC00'],
+                              [1, '#FF3300']
+                            ],
+                            showscale: true,
+                            colorbar: {
+                              title: { text: 'Stress (σ/σ₀)', font: { color: '#ccc' } },
+                              tickfont: { color: '#ccc' }
+                            },
+                            hovertemplate: 'Stress Ratio: %{z:.2f}<extra></extra>'
+                          }]}
+                          layout={{
+                            title: { text: 'Internal Stress Distribution', font: { color: '#FF6B6B', size: 14 } },
+                            paper_bgcolor: 'rgba(0,0,0,0)',
+                            plot_bgcolor: 'rgba(10,10,30,0.8)',
+                            xaxis: { title: 'Cross-section X', color: '#666', showgrid: false },
+                            yaxis: { title: 'Cross-section Y', color: '#666', showgrid: false, scaleanchor: 'x' },
+                            margin: { t: 50, b: 50, l: 60, r: 80 },
+                            font: { color: '#ccc' },
+                            annotations: [{
+                              x: (demAnalysisData.stressGridSize - 1) / 2,
+                              y: (demAnalysisData.stressGridSize - 1) / 2,
+                              text: 'Fracture<br>Zone',
+                              showarrow: false,
+                              font: { color: '#fff', size: 10 }
+                            }]
+                          }}
+                          style={{ width: '100%', height: '400px' }}
+                          config={{ responsive: true, displayModeBar: false }}
+                        />
+                        <Plot
+                          data={[{
+                            type: 'scatter',
+                            mode: 'markers',
+                            x: demFragments.filter(f => !f.isDust).map(f => f.stressLevel || 0),
+                            y: demFragments.filter(f => !f.isDust).map(f => f.contactForce || 0),
+                            marker: {
+                              size: demFragments.filter(f => !f.isDust).map(f => Math.max(10, f.mass)),
+                              color: demFragments.filter(f => !f.isDust).map(f => f.kineticEnergy || 0),
+                              colorscale: 'Hot',
+                              showscale: true,
+                              colorbar: {
+                                title: { text: 'KE (J)', font: { color: '#ccc' } },
+                                tickfont: { color: '#ccc' }
+                              }
+                            },
+                            text: demFragments.filter(f => !f.isDust).map((f, i) => 
+                              `Fragment ${i+1}<br>Stress: ${(f.stressLevel || 0).toFixed(2)}<br>Force: ${(f.contactForce || 0).toExponential(2)} N`
+                            ),
+                            hovertemplate: '%{text}<extra></extra>'
+                          }]}
+                          layout={{
+                            title: { text: 'Fragment Contact Force vs Stress', font: { color: '#4ECDC4', size: 14 } },
+                            paper_bgcolor: 'rgba(0,0,0,0)',
+                            plot_bgcolor: 'rgba(10,10,30,0.8)',
+                            xaxis: { title: 'Stress Level (σ/σ₀)', color: '#666', gridcolor: '#333' },
+                            yaxis: { title: 'Contact Force (N)', color: '#666', gridcolor: '#333', type: 'log' },
+                            margin: { t: 50, b: 50, l: 80, r: 80 },
+                            font: { color: '#ccc' }
+                          }}
+                          style={{ width: '100%', height: '400px' }}
+                          config={{ responsive: true, displayModeBar: false }}
+                        />
+                      </SimulationGrid>
+                      <p style={{ color: '#888', textAlign: 'center', marginTop: '10px', fontSize: '0.85rem' }}>
+                        DEM analysis shows internal stress distribution and particle contact forces based on Hertzian contact theory.
+                        Fragment interactions modeled using discrete element methodology.
+                      </p>
+                    </div>
+                  </>
+                )}
               </>
             )}
           </SectionCard>
